@@ -1,0 +1,13 @@
+{
+  "name": "nutrient-document-processor-api",
+  "version": "1.0.0",
+  "description": "Execute common document-processing tasks with @nutrient-sdk/dws-client-typescript in Node.js scripts.",
+  "author": {
+    "name": "PSPDFKit",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "MIT",
+  "keywords": ["nutrient", "dws", "document", "pdf", "processing", "convert", "ocr", "extract"]
+}
