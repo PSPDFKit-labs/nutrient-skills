@@ -10,7 +10,7 @@ Build a custom script when the user needs:
 ## Preferred Construction Order
 
 1. Validate CLI inputs and parse options.
-2. Create client with `NUTRIENT_DWS_API_KEY`.
+2. Create client with `create_client()` from `lib.common`.
 3. Build workflow using either:
    - Direct methods for single operation
    - `client.workflow()` for multi-step actions
@@ -19,6 +19,8 @@ Build a custom script when the user needs:
 
 ## Script Quality Requirements
 
+- Use a PEP 723 inline script header (`# /// script ... ///`) with `dependencies = ["nutrient-dws"]`.
+- Run with `asyncio.run(main())` — all client methods are async.
 - Keep scripts non-interactive.
 - Accept all runtime values by args/env vars.
 - Avoid hard-coded secrets and absolute local paths.

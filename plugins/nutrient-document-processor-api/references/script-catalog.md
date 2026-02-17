@@ -1,69 +1,73 @@
 # Script Catalog
 
-## Setup
-
-- `scripts/setup-latest-client.mjs`
-  - Install `@nutrient-sdk/dws-client-typescript@latest` with npm/pnpm/yarn.
-
 ## Core Document Operations
 
-- `scripts/convert.mjs`
-  - Method: `client.convert(input, format)`
+- `scripts/convert.py`
+  - Method: `client.convert(input, target_format)`
   - Common use: office-to-pdf, pdf-to-markdown/html/image
 
-- `scripts/merge.mjs`
+- `scripts/merge.py`
   - Method: `client.merge(files)`
   - Common use: combine reports, append cover pages
 
-- `scripts/split.mjs`
-  - Method: `client.split(file, ranges)`
+- `scripts/split.py`
+  - Method: `client.split(pdf, page_ranges)`
   - Common use: split sections into separate files
 
-- `scripts/ocr.mjs`
+- `scripts/ocr.py`
   - Method: `client.ocr(file, language|language[])`
   - Common use: searchable text from scanned PDFs
 
-- `scripts/extract-text.mjs`
-  - Method: `client.extractText(file, pages?)`
+- `scripts/extract-text.py`
+  - Method: `client.extract_text(file, pages?)`
   - Common use: content indexing and summarization input
 
-- `scripts/extract-table.mjs`
-  - Method: `client.extractTable(file, pages?)`
+- `scripts/extract-table.py`
+  - Method: `client.extract_table(file, pages?)`
   - Common use: analytics ingest from PDFs
 
-- `scripts/extract-key-value-pairs.mjs`
-  - Method: `client.extractKeyValuePairs(file, pages?)`
+- `scripts/extract-key-value-pairs.py`
+  - Method: `client.extract_key_value_pairs(file, pages?)`
   - Common use: forms, invoices, claims data extraction
 
 ## PDF Editing and Security
 
-- `scripts/watermark-text.mjs`
-  - Method: `client.watermarkText(file, text, options?)`
+- `scripts/watermark-text.py`
+  - Method: `client.watermark_text(file, text, options?)`
 
-- `scripts/redact-ai.mjs`
-  - Method: `client.createRedactionsAI(file, criteria, mode, pages?)`
+- `scripts/redact-ai.py`
+  - Method: `client.create_redactions_ai(pdf, criteria, redaction_state, pages?)`
 
-- `scripts/rotate.mjs`
-  - Method: `client.rotate(file, angle, pages?)`
+- `scripts/rotate.py`
+  - Method: `client.rotate(pdf, angle, pages?)`
 
-- `scripts/sign.mjs`
-  - Method: `client.sign(file, signatureData?, options?)`
+- `scripts/sign.py`
+  - Method: `client.sign(pdf, data?, options?)`
   - Note: input must be local file path
 
-- `scripts/optimize.mjs`
-  - Method: `client.optimize(file, options?)`
+- `scripts/optimize.py`
+  - Method: `client.optimize(pdf, options?)`
 
-- `scripts/password-protect.mjs`
-  - Method: `client.passwordProtect(file, userPassword, ownerPassword, permissions?)`
+- `scripts/password-protect.py`
+  - Method: `client.password_protect(file, user_password, owner_password, permissions?)`
 
-- `scripts/add-pages.mjs`
-  - Method: `client.addPage(file, count, index?)`
+- `scripts/add-pages.py`
+  - Method: `client.add_page(pdf, count, index?)`
 
-- `scripts/delete-pages.mjs`
-  - Method: `client.deletePages(file, pageIndices)`
+- `scripts/delete-pages.py`
+  - Method: `client.delete_pages(pdf, page_indices)`
 
-- `scripts/duplicate-pages.mjs`
-  - Method: `client.duplicatePages(file, pageIndices)`
+- `scripts/duplicate-pages.py`
+  - Method: `client.duplicate_pages(pdf, page_indices)`
+
+## Invocation
+
+Run scripts with `uv run` from the plugin root:
+
+```bash
+uv run scripts/<script>.py --help
+uv run scripts/convert.py --input doc.pdf --format docx --out out.docx
+```
 
 ## Page Range Conventions
 
