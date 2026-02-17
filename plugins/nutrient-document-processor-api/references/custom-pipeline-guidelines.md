@@ -10,7 +10,7 @@ Build a custom script when the user needs:
 ## Preferred Construction Order
 
 1. Validate CLI inputs and parse options.
-2. Create client with `NUTRIENT_API_KEY`.
+2. Create client with `NUTRIENT_DWS_API_KEY`.
 3. Build workflow using either:
    - Direct methods for single operation
    - `client.workflow()` for multi-step actions

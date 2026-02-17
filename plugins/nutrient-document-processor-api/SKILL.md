@@ -13,7 +13,7 @@ All paths below are relative to the plugin root (the directory containing `scrip
 2. Install the latest client package in the target project:
   - `node scripts/setup-latest-client.mjs npm`
 3. Export the API key before running scripts:
-   - `export NUTRIENT_API_KEY="nutr_sk_..."`
+   - `export NUTRIENT_DWS_API_KEY="nutr_sk_..."`
 4. Run task scripts with `node` from the plugin root.
 
 ## Task Scripts

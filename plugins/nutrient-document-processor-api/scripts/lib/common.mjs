@@ -123,10 +123,10 @@ export function assertLocalFile(value, key) {
 }
 
 export async function createClient() {
-  const apiKey = process.env.NUTRIENT_API_KEY;
+  const apiKey = process.env.NUTRIENT_DWS_API_KEY;
 
   if (!apiKey) {
-    throw new Error('NUTRIENT_API_KEY is not set. Export it before running these scripts.');
+    throw new Error('NUTRIENT_DWS_API_KEY is not set. Export it before running these scripts.');
   }
 
   let NutrientClient;
