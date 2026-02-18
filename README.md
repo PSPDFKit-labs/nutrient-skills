@@ -77,7 +77,7 @@ plugins/
         SKILL.md                    Skill definition (Claude Code auto-discovery)
     agents/
       openai.yaml                   OpenAI Codex interface metadata
-    scripts/                        Ready-to-run Node.js task scripts
+    scripts/                        Ready-to-run Python task scripts
     assets/templates/               Custom workflow template
     references/                     API method mapping and pipeline guides
 ```
@@ -86,7 +86,7 @@ plugins/
 
 ## Requirements
 
-- Node.js 18+
+- Python 3.10+ with [uv](https://docs.astral.sh/uv/)
 - A [Nutrient API key](https://dashboard.nutrient.io/)
 
 ---
