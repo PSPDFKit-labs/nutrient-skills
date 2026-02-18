@@ -5,6 +5,6 @@
 Initial release of the Nutrient DWS Processor API plugin.
 
 **New:**
-- 16 ready-to-run Node.js scripts for document conversion, extraction, transformation, and security operations
+- 19 ready-to-run Python scripts for document conversion, extraction, transformation, and security operations
 - Custom workflow template for multi-step document pipelines
 - Support for Claude Code (via marketplace), OpenAI Codex, and manual agent installation

@@ -12,7 +12,7 @@
   "plugins": [
     {
       "name": "nutrient-document-processor-api",
-      "description": "Execute common document-processing tasks with @nutrient-sdk/dws-client-typescript. Convert, merge, split, OCR, extract, watermark, redact, sign, optimize, protect, and reorder documents.",
+      "description": "Execute common document-processing tasks with nutrient-dws. Convert, merge, split, OCR, extract, watermark, redact, sign, optimize, protect, and reorder documents.",
       "version": "1.0.0",
       "source": "./plugins/nutrient-document-processor-api",
       "author": {
