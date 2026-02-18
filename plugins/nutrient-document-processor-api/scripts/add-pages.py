@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lib.common import create_client, write_binary_output, handle_error
+from lib.common import create_client, write_binary_output, handle_error, fix_negative_args
 
 
 async def main() -> None:
@@ -21,7 +21,7 @@ async def main() -> None:
     )
     parser.add_argument("--out", required=True, help="Output file path.")
     parser.add_argument("--index", type=int, help="Insertion index (0-based; default: end).")
-    args = parser.parse_args()
+    args = parser.parse_args(fix_negative_args())
 
     if args.count <= 0:
         parser.error("--count must be a positive integer.")
