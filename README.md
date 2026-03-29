@@ -1,6 +1,6 @@
 # Nutrient Skills
 
-A Claude Code marketplace containing AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs.
+AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works with Claude Code, Codex, Cursor, Gemini CLI, and [other agents](https://github.com/vercel-labs/skills#supported-agents).
 
 ## Available Skills
 
@@ -26,42 +26,21 @@ To list all available skills in this repo:
 npx skills add pspdfkit-labs/nutrient-skills --list
 ```
 
-### Claude Code plugin marketplace
+### Claude Code / Codex plugin marketplace
 
-Alternatively, use Claude Code's built-in plugin system:
+Both Claude Code and Codex support the `/plugin` command:
 
 ```
 /plugin marketplace add pspdfkit-labs/nutrient-skills
 /plugin install nutrient-document-processor-api@nutrient-skills
 ```
 
-After installation, Claude Code will automatically load the skill in all future sessions.
+After installation, the skill will automatically load in all future sessions.
 
 To install additional skills as they are released:
 
 ```
 /plugin install <skill-name>@nutrient-skills
-```
-
-### OpenAI Codex
-
-Codex scans skills from `~/.codex/skills/` (user-wide) and `.agents/skills/` (project-wide, scanned up to the git root). Each skill directory must have a `SKILL.md` at its root. The `agents/openai.yaml` file is picked up automatically for display name and invocation policy configuration.
-
-Because this is a multi-skill repository, point Codex at the individual skill subdirectory rather than the repo root. Repeat for each skill you want to install.
-
-**User-wide (recommended — symlink stays up to date with `git pull`):**
-```bash
-git clone https://github.com/pspdfkit-labs/nutrient-skills.git ~/nutrient-skills
-ln -s ~/nutrient-skills/plugins/<skill-name> \
-  ~/.codex/skills/<skill-name>
-```
-
-**Project-wide** (run from your project root):
-```bash
-mkdir -p .agents/skills
-git clone https://github.com/pspdfkit-labs/nutrient-skills.git
-ln -s $(pwd)/nutrient-skills/plugins/<skill-name> \
-  .agents/skills/<skill-name>
 ```
 
 ### Manual / any agent
@@ -97,16 +76,3 @@ plugins/
     assets/                         Templates and static assets
     references/                     API docs, method mappings, and guides
 ```
-
----
-
-## Requirements
-
-- Python 3.10+ (scripts use [inline script metadata](https://packaging.python.org/en/latest/specifications/inline-script-metadata/) — run with `uv run`)
-- A [Nutrient API key](https://dashboard.nutrient.io/)
-
----
-
-## License
-
-MIT
