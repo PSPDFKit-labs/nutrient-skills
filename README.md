@@ -10,9 +10,25 @@ A Claude Code marketplace containing AI agent skills for [Nutrient](https://www.
 
 ## Installation
 
-### Claude Code (recommended)
+### npx skills (recommended)
 
-Add this repository as a marketplace, then install individual skills:
+Install individual skills using the [Skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add pspdfkit-labs/nutrient-skills --skill nutrient-document-processor-api
+```
+
+This works with Claude Code, Codex, Cursor, Gemini CLI, and [many other agents](https://github.com/vercel-labs/skills#supported-agents).
+
+To list all available skills in this repo:
+
+```bash
+npx skills add pspdfkit-labs/nutrient-skills --list
+```
+
+### Claude Code plugin marketplace
+
+Alternatively, use Claude Code's built-in plugin system:
 
 ```
 /plugin marketplace add pspdfkit-labs/nutrient-skills
