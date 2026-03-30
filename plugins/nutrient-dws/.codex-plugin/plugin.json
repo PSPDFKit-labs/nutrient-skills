@@ -1,7 +1,7 @@
 {
-  "name": "nutrient-document-processor-api",
+  "name": "nutrient-dws",
   "version": "1.0.0",
-  "description": "Execute common document-processing tasks with the nutrient-dws Python client via uv run scripts.",
+  "description": "Document processing skills powered by the Nutrient Document Web Services API.",
   "author": {
     "name": "PSPDFKit",
     "email": "support@nutrient.io"
