@@ -49,8 +49,7 @@ Clone the repository and point your agent at the skill directory:
 
 ```bash
 git clone https://github.com/pspdfkit-labs/nutrient-skills.git
-# Each skill lives under plugins/<skill-name>/
-# SKILL.md:  nutrient-skills/plugins/<skill-name>/SKILL.md
+# Each skill lives under plugins/<skill-name>/skills/<skill-name>/SKILL.md
 ```
 
 Reference `SKILL.md` directly in your agent's context, or symlink the skill directory into wherever your agent resolves skills.
@@ -61,18 +60,19 @@ Reference `SKILL.md` directly in your agent's context, or symlink the skill dire
 
 ```
 .claude-plugin/
-  marketplace.json                  Claude Code marketplace catalog
+  marketplace.json                  Marketplace catalog
+AGENTS.md                           Agent instructions (Codex, generic)
+CLAUDE.md                           Agent instructions (Claude Code)
 plugins/
-  <skill-name>/                     One directory per skill
+  <skill-name>/
     .claude-plugin/
       plugin.json                   Plugin manifest (Claude Code)
-    SKILL.md                        Skill definition (Codex + generic agents)
+    .codex-plugin/
+      plugin.json                   Plugin manifest (Codex)
     skills/
       <skill-name>/
-        SKILL.md                    Skill definition (Claude Code auto-discovery)
-    agents/
-      openai.yaml                   OpenAI Codex interface metadata
-    scripts/                        Ready-to-run task scripts
-    assets/                         Templates and static assets
-    references/                     API docs, method mappings, and guides
+        SKILL.md                    Skill definition
+        scripts/                    Optional: task scripts
+        assets/                     Optional: templates, static files
+        references/                 Optional: API docs, guides
 ```
