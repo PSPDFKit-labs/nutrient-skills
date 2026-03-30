@@ -1,5 +1,5 @@
 ---
-name: nutrient-document-processor-api
+name: document-processor-api
 description: Execute common document-processing tasks with the nutrient-dws Python client via uv run scripts. Use when the user asks to convert, merge, split, OCR, extract text/tables/key-value pairs, watermark, redact, sign, optimize, protect, or reorder document content, or when they need a custom multi-step document pipeline script built from Nutrient DWS workflow actions.
 ---
 
@@ -7,7 +7,7 @@ description: Execute common document-processing tasks with the nutrient-dws Pyth
 
 ## Quick Start
 
-All paths below are relative to the plugin root (the directory containing `scripts/`, `assets/`, and `references/`).
+All paths below are relative to this skill's directory (the directory containing `scripts/`, `assets/`, and `references/`).
 
 1. Export the API key before running scripts:
    - `export NUTRIENT_DWS_API_KEY="nutr_sk_..."`

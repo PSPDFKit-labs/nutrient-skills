@@ -6,15 +6,15 @@
     "email": "support@nutrient.io"
   },
   "metadata": {
-    "description": "Claude Code skills for Nutrient APIs and SDKs",
+    "description": "AI agent skills for Nutrient APIs and SDKs",
     "pluginRoot": "./plugins"
   },
   "plugins": [
     {
-      "name": "nutrient-document-processor-api",
-      "description": "Execute common document-processing tasks with @nutrient-sdk/dws-client-typescript. Convert, merge, split, OCR, extract, watermark, redact, sign, optimize, protect, and reorder documents.",
+      "name": "nutrient-dws",
+      "description": "Document processing skills powered by the Nutrient Document Web Services API. Convert, merge, split, OCR, extract, watermark, redact, sign, optimize, protect, and reorder documents.",
       "version": "1.0.0",
-      "source": "./plugins/nutrient-document-processor-api",
+      "source": "./plugins/nutrient-dws",
       "author": {
         "name": "PSPDFKit",
         "email": "support@nutrient.io"
