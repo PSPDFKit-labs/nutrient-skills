@@ -7,6 +7,7 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 | Plugin | Skill | Description |
 |--------|-------|-------------|
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-processor-api` | Convert, extract, transform, and secure documents via the Nutrient Document Web Services API |
+| [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Extract text from PDFs as structured, semantic Markdown |
 
 ## Installation
 
@@ -16,6 +17,7 @@ Install using the [Skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add pspdfkit-labs/nutrient-skills --skill document-processor-api
+npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-markdown
 ```
 
 This works with Claude Code, Codex, Cursor, Gemini CLI, and [many other agents](https://github.com/vercel-labs/skills#supported-agents).
