@@ -21,6 +21,18 @@
       },
       "license": "MIT",
       "keywords": ["nutrient", "dws", "document", "pdf", "processing", "convert", "ocr", "extract"]
+    },
+    {
+      "name": "pdf-to-markdown",
+      "description": "Extract text as structured, semantic Markdown from a PDF.",
+      "version": "1.0.0",
+      "source": "./plugins/pdf-to-markdown",
+      "author": {
+        "name": "PSPDFKit",
+        "email": "support@nutrient.io"
+      },
+      "license": "Proprietary",
+      "keywords": ["nutrient", "pdf", "markdown", "extract", "conversion"]
     }
   ]
 }
