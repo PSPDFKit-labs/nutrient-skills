@@ -6,7 +6,6 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 
 | Plugin | Skill | Description |
 |--------|-------|-------------|
-| [`nutrient-dws`](plugins/nutrient-dws) | `document-processor-api` | Convert, extract, transform, and secure documents via the Nutrient Document Web Services API |
 | [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Extract text from PDFs as structured, semantic Markdown |
 
 ## Installation
@@ -16,7 +15,6 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 Install using the [Skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add pspdfkit-labs/nutrient-skills --skill document-processor-api
 npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-markdown
 ```
 
@@ -34,7 +32,7 @@ Both Claude Code and Codex support the `/plugin` command:
 
 ```
 /plugin marketplace add pspdfkit-labs/nutrient-skills
-/plugin install nutrient-dws@nutrient-skills
+/plugin install pdf-to-markdown@nutrient-skills
 ```
 
 After installation, the plugin's skills will automatically load in all future sessions.
