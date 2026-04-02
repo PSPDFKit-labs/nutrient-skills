@@ -2,7 +2,7 @@
 
 This repository contains AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs.
 
-Each skill lives under `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`. Read the relevant SKILL.md for instructions on how to use a skill.
+Each skill lives under `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`. Read the relevant SKILL.md for instructions on how to use a skill. Pi can load these skills directly by pointing its `skills` setting at a plugin's `skills/` directory or at the top-level `plugins/` directory.
 
 ## Available Skills
 
