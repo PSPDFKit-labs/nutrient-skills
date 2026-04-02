@@ -1,6 +1,6 @@
 # Nutrient Skills
 
-AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works with Claude Code, Codex, Cursor, Gemini CLI, and [other agents](https://github.com/vercel-labs/skills#supported-agents).
+AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works with Claude Code, Codex, Pi, Cursor, Gemini CLI, and [other agents](https://github.com/vercel-labs/skills#supported-agents).
 
 ## Available Skills
 
@@ -38,6 +38,22 @@ Both Claude Code and Codex support the `/plugin` command:
 ```
 
 After installation, the plugin's skills will automatically load in all future sessions.
+
+### Pi
+
+You can install the Nutrient skills with:
+
+```bash
+pi install git:github.com/PSPDFKit-labs/nutrient-skills
+```
+
+Pi will load all skills from the packaged `plugins/*/skills` directories. If you only want to try the package without installing it, use:
+
+```bash
+pi -e git:github.com/PSPDFKit-labs/nutrient-skills
+```
+
+You can still point Pi at a specific plugin's `skills/` directory or at the repo-wide `plugins/` directory in `~/.pi/agent/settings.json` or a project-local `.pi/settings.json` if you prefer manual control.
 
 ### Manual / any agent
 
