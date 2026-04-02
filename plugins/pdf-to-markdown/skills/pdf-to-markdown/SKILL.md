@@ -10,14 +10,14 @@ Convert PDFs into structured, semantic Markdown that preserves the document's lo
 
 ## Usage
 
-Run commands from the directory containing this SKILL.md so relative paths like `./bin/pdf-to-markdown` resolve correctly.
+Before running any commands, set `SKILL_DIR` to the absolute path of the directory containing this SKILL.md file. Use `$SKILL_DIR/bin/pdf-to-markdown` in all commands below.
 
-The `./bin/pdf-to-markdown` wrapper automatically installs the platform-specific binary into `~/.local/share/nutrient/cli/` from the CDN. It caches the binary and only checks for updates every 6 hours, so subsequent runs are fast.
+The `$SKILL_DIR/bin/pdf-to-markdown` wrapper automatically installs the platform-specific binary into `~/.local/share/nutrient/cli/` from the CDN. It caches the binary and only checks for updates every 6 hours, so subsequent runs are fast.
 
 ### Single file
 
 ```bash
-./bin/pdf-to-markdown INPUT.pdf OUTPUT.md
+$SKILL_DIR/bin/pdf-to-markdown INPUT.pdf OUTPUT.md
 ```
 
 If `OUTPUT.md` is omitted, the converter writes the Markdown to stdout instead.
@@ -27,13 +27,13 @@ If `OUTPUT.md` is omitted, the converter writes the Markdown to stdout instead.
 For multiple files, pass directories instead of individual files. The converter processes all PDFs in the input directory in parallel, which is much faster than converting one at a time.
 
 ```bash
-./bin/pdf-to-markdown INPUT_DIR/ OUTPUT_DIR/
+$SKILL_DIR/bin/pdf-to-markdown INPUT_DIR/ OUTPUT_DIR/
 ```
 
 ## Workflow
 
 1. **Choose mode**: Use batch directory mode for 2+ files, single file mode otherwise.
-2. **Run the converter**: `./bin/pdf-to-markdown INPUT [OUTPUT]`
+2. **Run the converter**: `$SKILL_DIR/bin/pdf-to-markdown INPUT [OUTPUT]`
 3. **Check the exit code**: Exit 0 means success. On failure, read stderr for the error message.
 4. **Validate the output**: If the output file is empty or near-empty, see Troubleshooting below.
 5. **Report the output path**: Tell the user where the converted file(s) are. Do NOT read the markdown back into context by default — converted documents can be very large and will fill the context window. Only read the output if the user's task specifically requires analyzing or summarizing the content (e.g., "summarize this PDF", "what does this contract say about X").

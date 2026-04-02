@@ -41,25 +41,19 @@ After installation, the plugin's skills will automatically load in all future se
 
 ### Pi
 
-Pi can load these skills directly from the repo without a separate Pi-only plugin. After cloning the repository, point Pi at the relevant `skills/` directory in either `~/.pi/settings.json` or a project-local `.pi/settings.json`:
+This repo now supports `pi install` directly. The root `package.json` declares a Pi package manifest, so you can install the whole repo with:
 
-```json
-{
-  "skills": [
-    "/path/to/nutrient-skills/plugins/pdf-to-markdown/skills"
-  ]
-}
+```bash
+pi install git:github.com/PSPDFKit-labs/nutrient-skills
 ```
 
-If you want Pi to discover all shared Nutrient skills at once, point it at the broader plugins directory instead:
+Pi will load all skills from the packaged `plugins/*/skills` directories. If you only want to try the package without installing it, use:
 
-```json
-{
-  "skills": [
-    "/path/to/nutrient-skills/plugins"
-  ]
-}
+```bash
+pi -e git:github.com/PSPDFKit-labs/nutrient-skills
 ```
+
+You can still point Pi at a specific plugin's `skills/` directory or at the repo-wide `plugins/` directory in `~/.pi/agent/settings.json` or a project-local `.pi/settings.json` if you prefer manual control.
 
 ### Manual / any agent
 
