@@ -41,7 +41,7 @@ After installation, the plugin's skills will automatically load in all future se
 
 ### Pi
 
-This repo now supports `pi install` directly. The root `package.json` declares a Pi package manifest, so you can install the whole repo with:
+You can install the Nutrient skills with:
 
 ```bash
 pi install git:github.com/PSPDFKit-labs/nutrient-skills
