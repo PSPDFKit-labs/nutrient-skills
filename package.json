@@ -4,6 +4,9 @@
   "private": true,
   "keywords": ["pi-package"],
   "pi": {
-    "skills": ["./plugins/*/skills"]
+    "skills": [
+       "./plugins/pdf-to-markdown/skills",
+       "./plugins/nutrient-dws/skills"
+     ]
   }
 }
