@@ -30,6 +30,16 @@ For multiple files, pass directories instead of individual files. The converter 
 $SKILL_DIR/bin/pdf-to-markdown INPUT_DIR/ OUTPUT_DIR/
 ```
 
+### Image export
+
+To extract images from the PDF and reference them in the output Markdown, add the `--enable-image-export` flag:
+
+```bash
+$SKILL_DIR/bin/pdf-to-markdown --enable-image-export INPUT.pdf OUTPUT.md
+```
+
+Images are saved to `{output}_resources/` alongside the output file and referenced as standard Markdown image links. This is useful when feeding output to LLMs that support vision, or when image context improves downstream accuracy. Off by default because it increases processing time for image-heavy documents.
+
 ## Workflow
 
 1. **Choose mode**: Use batch directory mode for 2+ files, single file mode otherwise.
