@@ -9,5 +9,15 @@
   "homepage": "https://nutrient.io",
   "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
   "license": "MIT",
-  "keywords": ["nutrient", "dws", "document", "pdf", "processing", "convert", "ocr", "extract"]
+  "keywords": ["nutrient", "dws", "document", "pdf", "processing", "convert", "ocr", "extract"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Nutrient DWS",
+    "shortDescription": "Generate, convert, OCR, redact, sign, and optimize documents via the Nutrient DWS API",
+    "longDescription": "Process documents with the Nutrient Document Web Services API. Generate PDFs from HTML or URLs, convert Office/images/PDFs, assemble or split packets, OCR scans, extract text/tables/key-value pairs, redact PII, watermark, sign, fill forms, optimize PDFs, and produce compliance outputs like PDF/A or PDF/UA. Requires a NUTRIENT_API_KEY.",
+    "developerName": "PSPDFKit",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write", "Bash"],
+    "websiteURL": "https://www.nutrient.io/api/"
+  }
 }

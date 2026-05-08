@@ -1,0 +1,23 @@
+{
+  "name": "pdf-to-markdown",
+  "version": "1.0.0",
+  "description": "Extract text as structured, semantic Markdown from a PDF.",
+  "author": {
+    "name": "PSPDFKit",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "Proprietary",
+  "keywords": ["nutrient", "pdf", "markdown", "extract", "conversion"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "PDF to Markdown",
+    "shortDescription": "Convert PDFs into structured, semantic Markdown",
+    "longDescription": "Extract PDF content as structured Markdown that preserves headings, tables, lists, and reading order — substantially higher quality than reading a PDF as raw text. Free for processing up to 1,000 documents per calendar month; commercial license required above that.",
+    "developerName": "PSPDFKit",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write", "Bash"],
+    "websiteURL": "https://www.nutrient.io/"
+  }
+}
