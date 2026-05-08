@@ -1,0 +1,6 @@
+interface:
+  display_name: "Nutrient Document Processing"
+  short_description: "Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents"
+  icon_small: "./assets/nutrient.svg"
+  icon_large: "./assets/nutrient.svg"
+  default_prompt: "Use $nutrient-document-processing to generate, convert, assemble, OCR, extract, redact, sign, fill, archive, optimize, or linearize this document, then return the output files and a concise summary."

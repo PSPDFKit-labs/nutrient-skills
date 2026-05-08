@@ -1,16 +1,19 @@
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, NoReturn
 
+_NEGATIVE_VALUE_RE = re.compile(r"^-\d")
+
 
 def create_client():
-    """Create and return a NutrientClient using the NUTRIENT_DWS_API_KEY env var."""
-    api_key = os.environ.get("NUTRIENT_DWS_API_KEY")
+    """Create and return a NutrientClient using the NUTRIENT_API_KEY env var."""
+    api_key = os.environ.get("NUTRIENT_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "NUTRIENT_DWS_API_KEY is not set. Export it before running these scripts."
+            "NUTRIENT_API_KEY is not set. Export it before running these scripts."
         )
     try:
         from nutrient_dws import NutrientClient
@@ -117,6 +120,32 @@ def parse_json_string(s: str) -> Any:
         return json.loads(s)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON string: {e}") from e
+
+
+def fix_negative_args() -> list[str]:
+    """Return sys.argv[1:] with negative numeric values joined to their flag.
+
+    argparse treats values like ``-1`` or ``-1:3`` as unknown option flags when
+    passed as a separate token. This helper reattaches them using ``=`` so that
+    ``--pages -1`` becomes ``--pages=-1`` before argparse sees the arguments.
+    """
+    argv = sys.argv[1:]
+    result = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if (
+            arg.startswith("--")
+            and "=" not in arg
+            and i + 1 < len(argv)
+            and _NEGATIVE_VALUE_RE.match(argv[i + 1])
+        ):
+            result.append(f"{arg}={argv[i + 1]}")
+            i += 2
+        else:
+            result.append(arg)
+            i += 1
+    return result
 
 
 def handle_error(e: Exception) -> NoReturn:
