@@ -1,0 +1,32 @@
+{
+  "name": "nutrient-skills",
+  "interface": {
+    "displayName": "Nutrient Skills"
+  },
+  "plugins": [
+    {
+      "name": "nutrient-dws",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nutrient-dws"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "pdf-to-markdown",
+      "source": {
+        "source": "local",
+        "path": "./plugins/pdf-to-markdown"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
