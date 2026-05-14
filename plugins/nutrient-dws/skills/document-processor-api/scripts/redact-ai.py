@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lib.common import create_client, write_binary_output, parse_page_range, handle_error
+from lib.common import create_client, write_binary_output, parse_page_range, handle_error, fix_negative_args
 
 
 async def main() -> None:
@@ -28,7 +28,7 @@ async def main() -> None:
         help="Redaction mode: stage (default) or apply.",
     )
     parser.add_argument("--pages", help="Page range in start:end format.")
-    args = parser.parse_args()
+    args = parser.parse_args(fix_negative_args())
 
     pages = parse_page_range(args.pages) if args.pages else None
 

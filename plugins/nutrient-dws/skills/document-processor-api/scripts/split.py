@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lib.common import create_client, write_binary_output, parse_csv, parse_page_range, handle_error
+from lib.common import create_client, write_binary_output, parse_csv, parse_page_range, handle_error, fix_negative_args
 
 
 async def main() -> None:
@@ -26,7 +26,7 @@ async def main() -> None:
     parser.add_argument(
         "--prefix", default="split", help="Filename prefix for output files (default: split)."
     )
-    args = parser.parse_args()
+    args = parser.parse_args(fix_negative_args())
 
     ranges_raw = parse_csv(args.ranges)
     if not ranges_raw:

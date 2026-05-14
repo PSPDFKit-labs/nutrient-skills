@@ -13,7 +13,7 @@
     {
       "name": "nutrient-dws",
       "description": "Document processing skills powered by the Nutrient Document Web Services API. Convert, merge, split, OCR, extract, watermark, redact, sign, optimize, protect, and reorder documents.",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "source": "./plugins/nutrient-dws",
       "author": {
         "name": "PSPDFKit",
