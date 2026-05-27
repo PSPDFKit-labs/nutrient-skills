@@ -48,7 +48,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from lib.common import create_client, handle_error
+from lib.common import assert_local_file, create_client, handle_error
 
 
 async def main() -> None:
@@ -104,7 +104,8 @@ Output shapes:
     )
     args = parser.parse_args()
 
-    # Validate input is a local file (the /extraction/parse endpoint is multipart-only)
+    # Validate input is a local file (the /extraction/parse endpoint is multipart-only).
+    assert_local_file(args.input, "input")
     input_path = Path(args.input)
     if not input_path.exists():
         print(f"Error: input file not found: {args.input}", file=sys.stderr)

@@ -20,7 +20,7 @@ ParseResponse
 │   ├── pagesProcessed
 │   └── processingTimeMs
 └── usage
-    └── dataExtractionCredits
+    └── data_extraction_credits
         ├── cost            — extraction credits used by this call
         └── remainingCredits
 ```
@@ -210,12 +210,12 @@ for pic in pictures:
 
 ```python
 usage = response.get("usage", {})
-credits = usage.get("dataExtractionCredits", {})
+credits = usage.get("data_extraction_credits", {})
 print(f"Cost: {credits.get('cost')} extraction credits")
 print(f"Remaining: {credits.get('remainingCredits')}")
 ```
 
-Note: `dataExtractionCredits` reflects charges from the **extraction credits** bucket,
+Note: `data_extraction_credits` reflects charges from the **extraction credits** bucket,
 which is separate from the **processor API credits** bucket used by `/build`, `/sign`,
 OCR, and other Processor API endpoints.
 
