@@ -9,6 +9,10 @@ This script is the single primitive for document understanding via /extraction/p
 One call returns the full structural document model — typed elements with bounding boxes,
 confidence scores, and reading order — or a whole-document Markdown string.
 
+DWS Extract is a separate product from DWS Processor. It uses its own API key, supplied
+via the NUTRIENT_EXTRACT_API_KEY environment variable. Calls to /extraction/parse with a
+DWS Processor key return 403.
+
 Billing note: /extraction/parse is billed against **extraction credits**, which are a
 separate billing bucket from the processor API credits consumed by /build, /sign, OCR,
 and other Processor API endpoints.
@@ -127,7 +131,7 @@ Output shapes:
 
     # Print usage summary so callers can see credit cost without opening the output file
     usage = response.get("usage", {})
-    credits_info = usage.get("dataExtractionCredits", {})
+    credits_info = usage.get("data_extraction_credits", {})
     cost = credits_info.get("cost")
     remaining = credits_info.get("remainingCredits")
     metrics = response.get("metrics", {})

@@ -1,13 +1,13 @@
 ---
 name: document-processor-api
 description: >-
-  Process documents with Nutrient DWS. Use when the user wants to generate PDFs from HTML or URLs,
-  convert Office/images/PDFs, assemble or split packets, OCR scans, extract text/tables/key-value
-  pairs, parse documents into a structural model or Markdown (for RAG indexing, form/invoice
-  extraction, or layout-aware understanding), redact PII, watermark, sign, fill forms, optimize
-  PDFs, or produce compliance outputs like PDF/A or PDF/UA. Triggers include convert to PDF, merge
-  these PDFs, OCR this scan, extract tables, parse this document, extract for RAG, redact PII,
-  sign this PDF, make this PDF/A, or linearize for web delivery.
+  Process documents with Nutrient DWS Processor. Use when the user wants to generate PDFs
+  from HTML or URLs, convert Office/images/PDFs, assemble or split packets, OCR scans,
+  extract text/tables/key-value pairs, redact PII, watermark, sign, fill forms, optimize
+  PDFs, or produce compliance outputs like PDF/A or PDF/UA. Triggers include convert to PDF,
+  merge these PDFs, OCR this scan, extract tables, redact PII, sign this PDF, make this
+  PDF/A, or linearize for web delivery. For document understanding / RAG / Markdown / layout
+  via `/extraction/parse`, use the sibling `document-extraction-api` skill.
 license: MIT
 metadata:
   author: nutrient-sdk
@@ -38,11 +38,14 @@ Use Nutrient DWS for managed document workflows where fidelity, compliance, or m
 ## When to use
 - Generate PDFs from HTML templates, uploaded assets, or remote URLs.
 - Convert Office, HTML, image, and PDF files between supported formats.
-- OCR scans and extract text, tables, or key-value pairs.
-- Parse a document into its structural model or whole-document Markdown for RAG indexing, form/invoice extraction, or layout-aware understanding.
+- OCR scans and extract text, tables, or key-value pairs (via `/build` actions).
 - Redact PII, watermark, sign, fill forms, merge, split, rotate, flatten, or encrypt PDFs.
 - Produce delivery targets like PDF/A, PDF/UA, optimized PDFs, or linearized PDFs.
 - Check credits before large, batch, or AI-heavy runs.
+
+For document understanding via `/extraction/parse` (RAG, layout analysis, form/invoice
+extraction with bounding boxes, whole-document Markdown), use the sibling
+`document-extraction-api` skill instead — it is a separate DWS product with its own API key.
 
 ## Tool preference
 1. Prefer `scripts/*.py` for covered single-operation workflows.
@@ -50,73 +53,7 @@ Use Nutrient DWS for managed document workflows where fidelity, compliance, or m
 3. Use the modular `references/` docs and direct API payloads for capabilities that do not yet have a dedicated helper script, especially HTML/URL generation and compliance tuning.
 4. Use local PDF utilities only for lightweight inspection. Use Nutrient when output fidelity or compliance matters.
 
-## Data Extraction (`/extraction/parse`)
-
-Use `scripts/parse.py` for any task involving document understanding, content extraction,
-RAG indexing, form data extraction, or layout analysis.
-
-**`/extraction/parse` is a document-understanding primitive**: one call returns the full
-structural document model — typed elements with bounding boxes, confidence scores, and
-reading order — or a whole-document Markdown string. You always receive all element types
-in a single call.
-
-### Picking a mode
-
-Choose based on the user's intent and acceptable credit cost. All costs are
-**extraction credits per page** — a separate billing bucket from the processor API
-credits consumed by `/build`, `/sign`, OCR, and other Processor API endpoints.
-
-| User intent | Mode | Output format | Cost | Notes |
-|-------------|------|---------------|------|-------|
-| RAG / search indexing / content migration — born-digital PDF | `text` | `markdown` | 1 cr/pg | Cheapest path; no OCR or AI needed |
-| RAG / search indexing — scanned or image-based PDF | `structure` | `markdown` | 1.5 cr/pg | OCR required before Markdown assembly |
-| Form / invoice extraction | `understand` | `spatial` | 9 cr/pg | AI classification for reliable key-value and table detection |
-| Layout-aware document understanding | `understand` | `spatial` | 9 cr/pg | Semantic paragraph roles (Title, SectionHeader, etc.) |
-| Deep visual understanding (charts, diagrams, alt text) | `agentic` | `spatial` | 18 cr/pg | VLM adds alt descriptions on every picture element |
-| **Default / ambiguous intent** | **`structure`** | **`spatial`** | **1.5 cr/pg** | Good balance: OCR + spatial elements, low cost |
-
-When the user's intent is unclear, **default to `structure` mode with `spatial` output**
-(1.5 extraction credits per page). Explain the cost/quality options and ask if a
-different mode is preferable before running on large documents.
-
-### Invocation
-
-```bash
-# Default: structure mode, spatial output
-uv run scripts/parse.py --input doc.pdf --out out.json
-
-# Markdown for RAG (text mode — cheapest)
-uv run scripts/parse.py --input doc.pdf --out out.md --output-format markdown --mode text
-
-# Form extraction (understand mode)
-uv run scripts/parse.py --input doc.pdf --out out.json --mode understand
-
-# Agentic (VLM alt text on pictures)
-uv run scripts/parse.py --input doc.pdf --out out.json --mode agentic
-```
-
-The script prints extraction-credit usage after each run so you can verify the cost.
-
-### Downstream consumption
-
-After a single `/parse` call, slice the response for common needs:
-
-- **Reading-order plain text**: walk `output.elements` sorted by `(page.pageIndex, readingOrder)`, join `paragraph` and `handwriting` `text` fields
-- **Tables**: project `cells[]` on each `table` element into rows/columns using `cell.row` and `cell.column`
-- **Key-value pairs**: read `pairs[]` on each `keyValueRegion` element — each pair has `.key.value` and `.value.value`
-- **Formulas**: read `latex` on each `formula` element
-- **Pictures**: read `classification` and `altDescription` (populated by `agentic` mode) on each `picture` element
-- **Markdown output**: call with `--output-format markdown`; the script writes the Markdown string directly
-
-Full patterns with Python snippets and jq one-liners: `references/parse-output-filtering.md`
-
-### Input constraint
-
-`parse.py` only accepts **local file paths** — the underlying API endpoint is
-multipart-only. For remote inputs, download the file first.
-
 ## Single-operation scripts
-- `parse.py` -> document understanding via `/extraction/parse` (structural model or whole-document Markdown)
 - `convert.py` -> convert between `pdf`, `pdfa`, `pdfua`, `docx`, `xlsx`, `pptx`, `png`, `jpeg`, `webp`, `html`, and `markdown`
 - `merge.py` -> merge multiple files into one PDF
 - `split.py` -> split one PDF into multiple PDFs by page ranges
@@ -148,7 +85,6 @@ When the user asks for multiple operations in one run:
 - `split.py` requires a multi-page PDF and cannot extract ranges from a single-page document.
 - `delete-pages.py` must retain at least one page and cannot delete the entire document.
 - `sign.py` only accepts local file paths for the main PDF.
-- `parse.py` only accepts local file paths (the `/extraction/parse` endpoint is multipart-only).
 
 ## Decision rules
 - Prefer a helper script when one already covers the requested operation cleanly.
@@ -177,7 +113,6 @@ Read only what you need:
 - `references/generation-and-conversion.md` -> HTML/URL generation and format conversion
 - `references/pdf-manipulation.md` -> merge, split, page-range, rotate, and flatten workflows
 - `references/extraction-and-ocr.md` -> OCR, text extraction, tables, and key-value workflows
-- `references/parse-output-filtering.md` -> `/extraction/parse` downstream consumption patterns (reading-order text, tables, key-values, formulas, pictures)
 - `references/security-signing-and-forms.md` -> redaction, watermarking, signatures, forms, and passwords
 - `references/compliance-and-optimization.md` -> PDF/A, PDF/UA, optimization, and linearization
 - `references/workflow-recipes.md` -> end-to-end sequencing patterns for common business document workflows
