@@ -1,13 +1,11 @@
 ---
 name: document-processor-api
 description: >-
-  Process documents with Nutrient DWS Processor. Use when the user wants to generate PDFs
-  from HTML or URLs, convert Office/images/PDFs, assemble or split packets, OCR scans,
-  extract text/tables/key-value pairs, redact PII, watermark, sign, fill forms, optimize
-  PDFs, or produce compliance outputs like PDF/A or PDF/UA. Triggers include convert to PDF,
-  merge these PDFs, OCR this scan, extract tables, redact PII, sign this PDF, make this
-  PDF/A, or linearize for web delivery. For document understanding / RAG / Markdown / layout
-  via `/extraction/parse`, use the sibling `document-extraction-api` skill.
+  Process documents with Nutrient DWS. Use when the user wants to generate PDFs from HTML or URLs,
+  convert Office/images/PDFs, assemble or split packets, OCR scans, extract text/tables/key-value
+  pairs, redact PII, watermark, sign, fill forms, optimize PDFs, or produce compliance outputs like
+  PDF/A or PDF/UA. Triggers include convert to PDF, merge these PDFs, OCR this scan, extract tables,
+  redact PII, sign this PDF, make this PDF/A, or linearize for web delivery.
 license: MIT
 metadata:
   author: nutrient-sdk
@@ -38,14 +36,10 @@ Use Nutrient DWS for managed document workflows where fidelity, compliance, or m
 ## When to use
 - Generate PDFs from HTML templates, uploaded assets, or remote URLs.
 - Convert Office, HTML, image, and PDF files between supported formats.
-- OCR scans and extract text, tables, or key-value pairs (via `/build` actions).
+- OCR scans and extract text, tables, or key-value pairs.
 - Redact PII, watermark, sign, fill forms, merge, split, rotate, flatten, or encrypt PDFs.
 - Produce delivery targets like PDF/A, PDF/UA, optimized PDFs, or linearized PDFs.
 - Check credits before large, batch, or AI-heavy runs.
-
-For document understanding via `/extraction/parse` (RAG, layout analysis, form/invoice
-extraction with bounding boxes, whole-document Markdown), use the sibling
-`document-extraction-api` skill instead — it is a separate DWS product with its own API key.
 
 ## Tool preference
 1. Prefer `scripts/*.py` for covered single-operation workflows.
@@ -133,3 +127,4 @@ Read only what you need:
   - Use process env injection at runtime (shell/export, secrets manager, or host env).
 - Restrict file access with `SANDBOX_PATH` to the minimum required working directory.
 - Before enabling MCP mode in production, verify package provenance and lock version.
+
