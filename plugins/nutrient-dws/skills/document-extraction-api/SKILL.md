@@ -67,6 +67,30 @@ Choose based on the user's intent and acceptable credit cost. All costs are
 **extraction credits per page** — a separate billing bucket from the processor API
 credits consumed by `/build`, `/sign`, OCR, and other DWS Processor endpoints.
 
+**Principle — decide from the request alone; do not ask the user clarifying questions.**
+Walk the checks below in order. Each rule that fires sets a minimum mode — the final
+pick is the highest minimum across all rules that fired. If none fired, use the default
+(rule 5).
+
+1. **Explicit features named in the request** are non-negotiable.
+   - Key-value pairs, form fields, semantic role classification (Title / SectionHeader /
+     etc.), formulas, or handwriting → at minimum `understand` (9 cr/pg).
+   - Alt text on pictures, charts, or diagrams → `agentic` (18 cr/pg).
+2. **Document type implied by the request or filename.**
+   - `form`, `invoice`, `receipt`, `application`, `claim` → likely contains key-value
+     pairs → `understand`.
+   - `chart`, `infographic`, or diagram-heavy doc + the user wants descriptions →
+     `agentic`.
+3. **OCR signal from filename or request** (`scanned`, `image-based`, `photographed`,
+   `handwritten`, `screenshot`) → `structure` minimum; `text` mode silently fails on
+   image-only input.
+4. **Output format from intent.** RAG, search indexing, embeddings, or content migration
+   → `markdown`. Layout overlay, per-element processing, or bounded extraction →
+   `spatial`.
+5. **No cues match anything above** → documented default `structure` + `spatial`
+   (1.5 cr/pg). Handles both born-digital and scanned, gives bounded typed elements
+   with table cells, never silently drops content.
+
 | User intent | Mode | Output format | Cost | Notes |
 |-------------|------|---------------|------|-------|
 | RAG / search indexing / content migration — born-digital PDF | `text` | `markdown` | 1 cr/pg | Cheapest path; no OCR or AI needed |
@@ -76,9 +100,10 @@ credits consumed by `/build`, `/sign`, OCR, and other DWS Processor endpoints.
 | Deep visual understanding (charts, diagrams, alt text) | `agentic` | `spatial` | 18 cr/pg | VLM adds alt descriptions on every picture element |
 | **Default / ambiguous intent** | **`structure`** | **`spatial`** | **1.5 cr/pg** | Good balance: OCR + spatial elements, low cost |
 
-When the user's intent is unclear, **default to `structure` mode with `spatial` output**
-(1.5 extraction credits per page). Explain the cost/quality options and ask if a
-different mode is preferable before running on large documents.
+**Confirm before running when the estimated cost exceeds 200 extraction credits** —
+roughly 11 pages of `agentic`, 22 of `understand`, 133 of `structure`, or 200 of `text`.
+Surface the estimate (`pages × cost_per_page`) and ask the operator to confirm before
+invoking. Under that threshold, just run.
 
 `mode='text'` is incompatible with `output_format='spatial'`; the client rejects the
 combination before the network call.
