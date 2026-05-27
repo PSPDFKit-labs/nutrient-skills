@@ -1,0 +1,4 @@
+
+# Skill-creator eval workspaces (local-only)
+plugins/nutrient-dws/skills/document-extraction-api-workspace/
+plugins/nutrient-dws/skills/document-extraction-api/evals/
