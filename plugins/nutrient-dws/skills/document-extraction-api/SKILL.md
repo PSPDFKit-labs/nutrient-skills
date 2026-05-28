@@ -146,8 +146,6 @@ multipart-only. For remote inputs, download the file first.
 
 ## Rules
 
-- One script per skill: `scripts/parse.py`. Do not add new committed scripts for /build
-  workflows here — those belong in the sibling `document-processor-api` skill.
 - Always preserve the printed credit-usage summary in script output so the operator can
   observe per-call cost.
 - Do not add a URL-fetch shortcut; the endpoint is multipart-only.
