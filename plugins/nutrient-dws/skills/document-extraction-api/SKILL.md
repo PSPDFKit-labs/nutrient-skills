@@ -137,7 +137,7 @@ After a single `/parse` call, slice the response for common needs:
 - **Pictures**: read `classification` and `altDescription` (populated by `agentic` mode) on each `picture` element
 - **Markdown output**: call with `--output-format markdown`; the script writes the Markdown string directly
 
-Full patterns with Python snippets and jq one-liners: `references/parse-output-filtering.md`
+For the canonical response schema and per-mode field availability, see the official docs linked from `references/parse-output-filtering.md`; that file also lists the tools we suggest for filtering and reshaping the response.
 
 ### Input constraint
 
