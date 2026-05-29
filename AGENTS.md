@@ -6,5 +6,6 @@ Each skill lives under `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`. Rea
 
 ## Available Skills
 
-- **nutrient-dws / document-processor-api** — Convert, extract, transform, and secure documents via the Nutrient Document Web Services API (Python scripts via `uv`).
+- **nutrient-dws / document-processor-api** — Convert, transform, redact, sign, watermark, OCR, and secure documents via the Nutrient DWS Processor API (Python scripts via `uv`).
+- **nutrient-dws / document-extraction-api** — Parse documents into a structural model (typed elements with bounds) or whole-document Markdown via the Nutrient DWS Data Extraction API (`/extraction/parse`). Use for RAG ingestion, layout analysis, and form/invoice extraction.
 - **pdf-to-markdown / pdf-to-markdown** — Extract text from PDFs as structured, semantic Markdown. Use when converting a PDF to Markdown, extracting text from a PDF, or processing one or more PDFs into Markdown output.
