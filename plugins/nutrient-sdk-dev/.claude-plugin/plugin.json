@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Skills for developing with Nutrient SDKs: Web Viewer, Document Authoring, Mobile (iOS/Android/React Native/Flutter/MAUI), Server (Python/Java/Node.js/.NET), self-hosted Nutrient Document Engine, and Nutrient AI Assistant.",
   "author": {
-    "name": "PSPDFKit",
+    "name": "Nutrient",
     "email": "support@nutrient.io"
   },
   "homepage": "https://nutrient.io",

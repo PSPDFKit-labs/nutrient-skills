@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Document processing skills powered by the Nutrient Document Web Services API.",
   "author": {
-    "name": "PSPDFKit",
+    "name": "Nutrient",
     "email": "support@nutrient.io"
   },
   "homepage": "https://nutrient.io",
