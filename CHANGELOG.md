@@ -1,5 +1,15 @@
 # Changelog
 
+## nutrient-sdk-dev 1.0.0
+
+Initial release of the Nutrient SDK development plugin — an umbrella set of skills for building with the Nutrient SDK families.
+
+**New:**
+- 13 skills, one per SDK family: `nutrient-web-sdk`, `nutrient-document-authoring`, `nutrient-ios-sdk`, `nutrient-android-sdk`, `nutrient-react-native-sdk`, `nutrient-flutter-sdk`, `nutrient-maui-sdk`, `nutrient-python-sdk`, `nutrient-java-server-sdk`, `nutrient-nodejs-server-sdk`, `nutrient-dotnet-server-sdk`, `nutrient-document-engine`, `nutrient-ai-assistant`
+- Each skill points to the relevant nutrient.io API reference and guide URLs (`llms.txt` dumps where available) and example repositories for that SDK
+- Corrects stale training data on package names and APIs (e.g. `@nutrient-sdk/viewer` / `NutrientViewer.load`, the PSPDFKit → Nutrient rebrand)
+- Claude Code and Codex plugin manifests
+
 ## nutrient-dws 2.0.0
 
 Full content rewrite and relicense (Apache-2.0 → MIT) of the DWS document processing skill.
