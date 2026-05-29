@@ -1,0 +1,13 @@
+{
+  "name": "nutrient-sdk-dev",
+  "version": "1.0.0",
+  "description": "Skills for developing with Nutrient SDKs: Web Viewer, Document Authoring, Mobile (iOS/Android/React Native/Flutter/MAUI), Server (Python/Java/Node.js/.NET), self-hosted Nutrient Document Engine, and Nutrient AI Assistant.",
+  "author": {
+    "name": "PSPDFKit",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "MIT",
+  "keywords": ["nutrient", "sdk", "web", "mobile", "ios", "android", "flutter", "react-native", "python", "java", "nodejs", "dotnet", "document-engine", "document-authoring", "ai-assistant", "pdf", "development"]
+}
