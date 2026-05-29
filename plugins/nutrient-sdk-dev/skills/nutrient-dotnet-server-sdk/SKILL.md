@@ -12,7 +12,7 @@ Server-side .NET library for advanced document processing — formerly distribut
 
 Single-fetch LLM-curated dumps — prefer these over the human-shaped docs site for API/guide look-ups:
 
-- API reference: https://www.nutrient.io/api/dotnet/llms.txt
+- API reference: https://www.nutrient.io/api/gdpicture/llms.txt (the API dump is served under the legacy `gdpicture` path, not `dotnet` — see Heritage below)
 - Guides: https://www.nutrient.io/guides/dotnet/llms.txt
 - Cross-product index (other Nutrient SDKs): https://www.nutrient.io/llms.txt
 
