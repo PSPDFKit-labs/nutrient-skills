@@ -219,14 +219,12 @@ fi
 # Starting with nutrient 1.1.0, the binary takes a verb as the first argument
 # (pdf-to-markdown / pdf-to-text / self-update) — and dispatches on argv[0]'s
 # basename when that basename matches a known verb (multi-call / busybox-style).
-# We exploit that here: ensure a `pdf-to-markdown` symlink exists next to the
+# We exploit that here: ensure a `pdf-to-text` symlink exists next to the
 # platform binary, then exec it. argv[0]'s basename becomes the verb, so the
-# binary's --help reads `pdf-to-markdown INPUT OUTPUT` instead of
-# `nutrient-macos-arm64 pdf-to-markdown INPUT OUTPUT`. Older binaries (pre-1.1.0)
-# without verb dispatch would treat the symlink as their canonical name and
-# fall back to positional argv, which is exactly the old behavior — so this
-# wrapper is forward- AND backward-compatible.
-VERB_LINK="$INSTALL_DIR/pdf-to-markdown"
+# binary's --help reads `pdf-to-text INPUT OUTPUT` instead of
+# `nutrient-macos-arm64 pdf-to-text INPUT OUTPUT`. Older binaries (pre-1.1.0)
+# without verb dispatch fall back to positional argv, matching the old behavior.
+VERB_LINK="$INSTALL_DIR/pdf-to-text"
 if [ "$(readlink "$VERB_LINK" 2>/dev/null)" != "$BINARY_NAME" ]; then
   rm -f "$VERB_LINK"
   ln -s "$BINARY_NAME" "$VERB_LINK"

@@ -25,7 +25,7 @@
     {
       "name": "pdf-to-markdown",
       "description": "Extract text as structured, semantic Markdown from a PDF.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./plugins/pdf-to-markdown",
       "author": {
         "name": "Nutrient",
@@ -33,6 +33,18 @@
       },
       "license": "Proprietary",
       "keywords": ["nutrient", "pdf", "markdown", "extract", "conversion"]
+    },
+    {
+      "name": "pdf-to-text",
+      "description": "Extract layout-preserving plain text from a PDF.",
+      "version": "1.0.0",
+      "source": "./plugins/pdf-to-text",
+      "author": {
+        "name": "Nutrient",
+        "email": "support@nutrient.io"
+      },
+      "license": "Proprietary",
+      "keywords": ["nutrient", "pdf", "text", "plain-text", "extract", "conversion"]
     },
     {
       "name": "nutrient-sdk-dev",
