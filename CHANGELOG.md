@@ -1,5 +1,21 @@
 # Changelog
 
+## pdf-to-text 1.0.0
+
+Initial release of the pdf-to-text skill — layout-preserving plain-text extraction from PDFs, backed by the same `nutrient` CLI as pdf-to-markdown.
+
+**New:**
+- `pdf-to-text` skill: each word is placed on a character grid mirroring its on-page position, so columns, indentation, and tabular alignment survive the conversion
+- Shares the `~/.local/share/nutrient/cli/` install and 6-hour update check with `pdf-to-markdown` (one binary backs `pdf-to-markdown`, `pdf-to-text`, and `self-update`)
+- Claude Code plugin manifest
+
+## pdf-to-markdown 1.1.0
+
+Adapts the wrapper for nutrient 1.1.0's verb-aware CLI.
+
+**Changed:**
+- `bin/pdf-to-markdown` now execs through a `pdf-to-markdown`-named symlink so the multi-call binary dispatches on `argv[0]`; forward- and backward-compatible with pre-1.1.0 binaries
+
 ## nutrient-sdk-dev 1.0.0
 
 Initial release of the Nutrient SDK development plugin — an umbrella set of skills for building with the Nutrient SDK families.
