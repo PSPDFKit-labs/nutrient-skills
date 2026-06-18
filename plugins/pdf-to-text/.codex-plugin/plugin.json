@@ -1,0 +1,17 @@
+{
+  "name": "pdf-to-text",
+  "version": "1.0.0",
+  "description": "Extract layout-preserving plain text from a PDF.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "PDF to Text"
+  },
+  "author": {
+    "name": "Nutrient",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "Proprietary",
+  "keywords": ["nutrient", "pdf", "text", "plain-text", "extract", "conversion"]
+}

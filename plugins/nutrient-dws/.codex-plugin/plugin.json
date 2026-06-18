@@ -2,6 +2,10 @@
   "name": "nutrient-dws",
   "version": "2.0.0",
   "description": "Document processing skills powered by the Nutrient Document Web Services API.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Nutrient DWS"
+  },
   "author": {
     "name": "Nutrient",
     "email": "support@nutrient.io"
