@@ -1,0 +1,17 @@
+{
+  "name": "pdf-to-markdown",
+  "version": "1.1.0",
+  "description": "Extract text as structured, semantic Markdown from a PDF.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "PDF to Markdown"
+  },
+  "author": {
+    "name": "Nutrient",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "Proprietary",
+  "keywords": ["nutrient", "pdf", "markdown", "extract", "conversion"]
+}

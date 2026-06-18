@@ -1,0 +1,40 @@
+{
+  "name": "nutrient-skills",
+  "interface": {
+    "displayName": "Nutrient Skills"
+  },
+  "plugins": [
+    {
+      "name": "nutrient-dws",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nutrient-dws"
+      },
+      "category": "Document Processing"
+    },
+    {
+      "name": "pdf-to-markdown",
+      "source": {
+        "source": "local",
+        "path": "./plugins/pdf-to-markdown"
+      },
+      "category": "Document Processing"
+    },
+    {
+      "name": "pdf-to-text",
+      "source": {
+        "source": "local",
+        "path": "./plugins/pdf-to-text"
+      },
+      "category": "Document Processing"
+    },
+    {
+      "name": "nutrient-sdk-dev",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nutrient-sdk-dev"
+      },
+      "category": "Development"
+    }
+  ]
+}

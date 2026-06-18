@@ -2,6 +2,10 @@
   "name": "nutrient-sdk-dev",
   "version": "1.0.0",
   "description": "Skills for developing with Nutrient SDKs: Web Viewer, Document Authoring, Mobile (iOS/Android/React Native/Flutter/MAUI), Server (Python/Java/Node.js/.NET), self-hosted Nutrient Document Engine, and Nutrient AI Assistant.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Nutrient SDK Dev"
+  },
   "author": {
     "name": "Nutrient",
     "email": "support@nutrient.io"
