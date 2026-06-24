@@ -9,6 +9,7 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-processor-api` | Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents via the Nutrient Document Web Services API |
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-extraction-api` | Parse documents into a structural model or Markdown via the Nutrient Data Extraction API |
 | [`nutrient-dws`](plugins/nutrient-dws) | `grounded-rag-ingestion` | Chunk documents into provenance-carrying JSONL (element type, page, bbox, confidence, reading order) for grounded, auditable RAG pipelines |
+| [`nutrient-dws`](plugins/nutrient-dws) | `dws-viewer-api` | Upload documents and mint viewer session JWTs for the Nutrient cloud Viewer API. Embeds interactive viewing, annotation, forms, and signing via cloud infrastructure — no server to run |
 | [`make-pdf`](plugins/make-pdf) | `make-pdf` | Generate PDFs from Markdown or HTML — single files or whole directories — with accessible PDF/UA, archival PDF/A, and watermark outputs, plus built-in conformance verification |
 | [`remediate-pdf`](plugins/remediate-pdf) | `remediate-pdf` | Remediate existing PDFs: auto-tag with PDF/UA semantic structure (headings, lists, tables, reading order) via the Nutrient DWS Accessibility API (auto-tag only — verify output with the bundled verify-pdf.py) |
 | [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Extract text from PDFs as structured, semantic Markdown |
@@ -26,6 +27,7 @@ Install using the [Skills CLI](https://github.com/vercel-labs/skills):
 npx skills add pspdfkit-labs/nutrient-skills --skill document-processor-api
 npx skills add pspdfkit-labs/nutrient-skills --skill document-extraction-api
 npx skills add pspdfkit-labs/nutrient-skills --skill grounded-rag-ingestion
+npx skills add pspdfkit-labs/nutrient-skills --skill dws-viewer-api
 npx skills add pspdfkit-labs/nutrient-skills --skill make-pdf
 npx skills add pspdfkit-labs/nutrient-skills --skill remediate-pdf
 npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-markdown
