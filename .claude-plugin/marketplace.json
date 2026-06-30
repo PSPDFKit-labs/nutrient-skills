@@ -25,7 +25,7 @@
     {
       "name": "pdf-to-markdown",
       "description": "Extract text as structured, semantic Markdown from a PDF.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "source": "./plugins/pdf-to-markdown",
       "author": {
         "name": "Nutrient",
@@ -37,7 +37,7 @@
     {
       "name": "pdf-to-text",
       "description": "Extract layout-preserving plain text from a PDF.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./plugins/pdf-to-text",
       "author": {
         "name": "Nutrient",
@@ -45,6 +45,18 @@
       },
       "license": "Proprietary",
       "keywords": ["nutrient", "pdf", "text", "plain-text", "extract", "conversion"]
+    },
+    {
+      "name": "query",
+      "description": "Find the most relevant passages in an already-extracted document (the text or Markdown output of pdf-to-markdown / pdf-to-text) with ranked (BM-25) search.",
+      "version": "1.0.0",
+      "source": "./plugins/query",
+      "author": {
+        "name": "Nutrient",
+        "email": "support@nutrient.io"
+      },
+      "license": "Proprietary",
+      "keywords": ["nutrient", "query", "search", "bm25", "retrieval", "rag"]
     },
     {
       "name": "nutrient-sdk-dev",

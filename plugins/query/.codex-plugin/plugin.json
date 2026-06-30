@@ -1,10 +1,10 @@
 {
-  "name": "pdf-to-text",
-  "version": "1.1.0",
-  "description": "Extract layout-preserving plain text from a PDF.",
+  "name": "query",
+  "version": "1.0.0",
+  "description": "Find the most relevant passages in an already-extracted document with ranked (BM-25) search.",
   "skills": "./skills/",
   "interface": {
-    "displayName": "PDF to Text"
+    "displayName": "Query"
   },
   "author": {
     "name": "Nutrient",
@@ -13,5 +13,5 @@
   "homepage": "https://nutrient.io",
   "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
   "license": "Proprietary",
-  "keywords": ["nutrient", "pdf", "text", "plain-text", "extract", "conversion"]
+  "keywords": ["nutrient", "query", "search", "bm25", "retrieval", "rag"]
 }

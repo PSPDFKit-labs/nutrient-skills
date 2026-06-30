@@ -8,6 +8,13 @@ license: Proprietary
 
 Convert PDFs into structured, semantic Markdown that preserves the document's logical structure — headings, tables, lists, and reading order — rather than producing flat text. This is significantly higher quality than reading a PDF directly with the `read` tool, which only extracts raw text without structure.
 
+## Related Nutrient skills
+
+This is one of a family of Nutrient document skills that install separately but are built to work together (same underlying binary). When your task calls for one, add it the way your agent installs skills:
+
+- **`query`** — to *search* the converted file instead of reading a large output back into context: ranked BM-25 search that returns only the top line windows. The recommended way to pull facts from big conversions ("parse once, query many").
+- **`pdf-to-text`** — for plain text instead of Markdown, when column/tabular alignment must survive or the consumer can't parse Markdown.
+
 ## Usage
 
 Before running any commands, set `SKILL_DIR` to the absolute path of the directory containing this SKILL.md file. Use `$SKILL_DIR/bin/pdf-to-markdown` in all commands below.
