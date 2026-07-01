@@ -13,6 +13,10 @@ Convert PDFs into layout-preserving plain text. Each word is placed on a charact
 - **Use `pdf-to-text`** when the downstream consumer is plain-text only (a non-Markdown LLM, a grep/awk pipeline, a CSV-style table extractor that cares about column alignment).
 - **Use `pdf-to-markdown`** when the consumer benefits from semantic structure (headings, lists, tables, reading order). Most RAG and LLM-context pipelines fall here.
 
+## Related Nutrient skills
+
+- **`query`** — once a file is extracted, *search* it instead of reading a large output back into context: ranked BM-25 search that returns only the top line windows ("parse once, query many"). Add it the way your agent installs skills.
+
 ## Usage
 
 Before running any commands, set `SKILL_DIR` to the absolute path of the directory containing this SKILL.md file. Use `$SKILL_DIR/bin/pdf-to-text` in all commands below.

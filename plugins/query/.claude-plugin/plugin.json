@@ -1,0 +1,6 @@
+{
+  "name": "query",
+  "version": "1.0.0",
+  "description": "Find the most relevant passages in an already-extracted document with ranked (BM-25) search.",
+  "license": "Proprietary"
+}

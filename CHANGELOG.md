@@ -1,5 +1,25 @@
 # Changelog
 
+## query 1.0.0
+
+Initial release of the query skill — ranked (BM-25) search over an already-extracted document, returning only the most relevant line windows instead of the whole file.
+
+**New:**
+- `query` skill: `query text INPUT "QUERY"` ranks every line of a converted `.md`/`.txt` (or a prebuilt index) and returns the top line windows with global line numbers — "parse once, query many"
+- `--emit-index` writes a reusable, self-contained index so repeat questions skip the rebuild
+- Shares the `~/.local/share/nutrient/cli/` install and 6-hour update check with `pdf-to-markdown` / `pdf-to-text` (one binary backs all of them)
+- Claude Code and Codex plugin manifests
+
+## pdf-to-markdown 1.2.0
+
+**Changed:**
+- SKILL.md now points to the `query` skill for searching large conversions instead of reading them back into context ("parse once, query many")
+
+## pdf-to-text 1.1.0
+
+**Changed:**
+- SKILL.md now points to the `query` skill for searching large conversions instead of reading them back into context ("parse once, query many")
+
 ## pdf-to-text 1.0.0
 
 Initial release of the pdf-to-text skill — layout-preserving plain-text extraction from PDFs, backed by the same `nutrient` CLI as pdf-to-markdown.

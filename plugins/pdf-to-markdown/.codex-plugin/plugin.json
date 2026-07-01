@@ -1,6 +1,6 @@
 {
   "name": "pdf-to-markdown",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Extract text as structured, semantic Markdown from a PDF.",
   "skills": "./skills/",
   "interface": {

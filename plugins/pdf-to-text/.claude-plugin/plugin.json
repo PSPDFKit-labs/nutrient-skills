@@ -1,6 +1,6 @@
 {
   "name": "pdf-to-text",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Extract layout-preserving plain text from a PDF.",
   "license": "Proprietary"
 }
