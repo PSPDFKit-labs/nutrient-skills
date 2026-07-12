@@ -214,16 +214,19 @@ def plan_batch(input_dir: Path, out_dir: Path) -> list[BatchJob]:
         (input_path, out_dir / f"{input_path.stem}.pdf", out_dir / f"{input_path.stem}.html")
         for input_path in input_paths
     ]
-    output_owners: dict[Path, Path] = {}
+    # Keyed casefolded so Report.md and report.html collide here rather than
+    # silently overwriting each other on case-insensitive filesystems (APFS, NTFS).
+    output_owners: dict[str, Path] = {}
     for input_path, pdf_path, html_path in jobs:
         for output_path in (pdf_path, html_path):
-            owner = output_owners.get(output_path)
+            key = str(output_path).casefold()
+            owner = output_owners.get(key)
             if owner is not None:
                 raise ValueError(
                     "Batch inputs would overwrite the same output "
                     f"{output_path}: {owner.name}, {input_path.name}"
                 )
-            output_owners[output_path] = input_path
+            output_owners[key] = input_path
     return jobs
 
 
@@ -451,14 +454,20 @@ def validate_file_job(
 
 
 async def verify_output(output_path: Path, args: argparse.Namespace) -> tuple[bool, bool]:
-    """Return whether verification passed and whether the verifier ran."""
+    """Return whether verification passed and whether the verifier ran.
+
+    Verification was explicitly requested for a compliance build, so an
+    inability to verify is reported as a failure (exit 3), never as success —
+    pass --no-verify to accept unverified output.
+    """
     uv = shutil.which("uv")
     if uv is None:
         print(
-            f"Warning: uv is not on PATH; skipping verification for {output_path}.",
+            f"Verification required but uv is not on PATH for {output_path}; "
+            "treating as unverified (use --no-verify to accept unverified output).",
             file=sys.stderr,
         )
-        return True, False
+        return False, False
 
     if args.accessible:
         profile = "pdfua"
@@ -483,13 +492,22 @@ async def verify_output(output_path: Path, args: argparse.Namespace) -> tuple[bo
         stdout=asyncio.subprocess.PIPE,
     )
     await process.communicate()
-    if process.returncode != 0:
+    if process.returncode == 0:
+        return True, True
+    if process.returncode == 1:
         print(
-            f"Verification failed for {output_path}; keeping the generated PDF.",
+            f"Verification failed conformance checks for {output_path}; "
+            "keeping the generated PDF.",
             file=sys.stderr,
         )
-        return False, True
-    return True, True
+    else:
+        print(
+            f"Verifier could not run for {output_path} "
+            f"(exit {process.returncode}); treating as unverified and "
+            "keeping the generated PDF.",
+            file=sys.stderr,
+        )
+    return False, True
 
 
 async def convert_one(
@@ -619,6 +637,11 @@ async def main() -> int:
         parser.error("--pdfa-level requires --pdfa.")
     if args.pdfa and args.pdfa_level is None:
         args.pdfa_level = "pdfa-2b"
+    if args.verify is True and not (args.accessible or args.pdfa):
+        parser.error(
+            "--verify requires --accessible or --pdfa; a standard PDF carries "
+            "no conformance claim to check."
+        )
     if args.verify is None:
         args.verify = args.accessible or args.pdfa
 

@@ -281,6 +281,24 @@ Trailing content must remain too.
     except Exception as e:
         failures.append(f"batch planning: {e}")
 
+    checks += 1
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            input_dir = Path(tmpdir) / "in"
+            input_dir.mkdir()
+            (input_dir / "Report.md").write_text("# A\n", encoding="utf-8")
+            (input_dir / "report.html").write_text("<html></html>", encoding="utf-8")
+            try:
+                make_pdf.plan_batch(input_dir, Path(tmpdir) / "out")
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(
+                    "case-insensitive output collision was not detected"
+                )
+    except Exception as e:
+        failures.append(f"casefold collision guard: {e}")
+
     if failures:
         print(f"FAIL: {len(failures)} of {checks} checks failed")
         for failure in failures:

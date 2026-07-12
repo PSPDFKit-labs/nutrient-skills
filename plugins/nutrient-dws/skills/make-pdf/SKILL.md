@@ -45,11 +45,11 @@ The `markdown-it-py` and `nutrient-dws` packages are fetched automatically on fi
 
 ## Verification (built in)
 
-Compliance outputs are verified, not just labeled. With `--accessible` or `--pdfa`, the generated PDF is automatically checked after the build (`--no-verify` opts out); exit code 3 means "generated but failed verification" — the PDF is kept on disk so you can inspect it.
+Compliance outputs are verified, not just labeled. With `--accessible` or `--pdfa`, the generated PDF is automatically checked after the build (`--no-verify` opts out); exit code 3 means "generated but failed verification" — the PDF is kept on disk so you can inspect it. If the verifier itself cannot run, the build still exits 3 rather than silently passing; `--no-verify` is the explicit way to accept unverified output. Passing `--verify` without a compliance flag is rejected up front — a standard PDF has no conformance claim to check.
 
 Two assurance levels, and be honest about which one ran:
 
-- **Structural checks** (always available, via `scripts/verify-pdf.py`): the PDF/UA claim marker (`pdfuaid` XMP), tagged-structure signals (`MarkInfo`, `StructTreeRoot`), language, `DisplayDocTitle`, and a non-empty document title — or the PDF/A identification (`pdfaid` part + conformance, matched against the requested level). These catch real failures but are **not a full conformance audit**.
+- **Structural checks** (always available, via `scripts/verify-pdf.py`): the PDF/UA-1 claim marker (`pdfuaid` XMP part 1 — PDF/UA-2 documents are out of scope), tagged-structure signals (`MarkInfo`, `StructTreeRoot`), language, `DisplayDocTitle`, and a non-empty document title — or the PDF/A identification (`pdfaid` part + conformance, matched against the requested level). These catch real failures but are **not a full conformance audit**.
 - **Full audit** (optional): if `verapdf` is installed on PATH, the verifier also runs veraPDF for a genuine conformance validation and reports its verdict. Recommend installing veraPDF when the user's requirement is regulatory (ADA/EAA deadlines, records retention).
 
 The verifier also works standalone on any PDF, including ones this skill did not create:
@@ -84,7 +84,7 @@ Generation is one step. For operations on the produced PDF, chain the sibling `d
 - Redact content: `document-processor-api/scripts/redact-ai.py`
 - Merge with other documents: `document-processor-api/scripts/merge.py`
 
-Run sibling scripts with `uv run` from their own skill directory. Example — "generate the report as PDF/A and sign it":
+Sibling scripts run fine from this skill's directory via a relative path. Example — "generate the report as PDF/A and sign it":
 
 ```bash
 uv run scripts/make-pdf.py --input report.md --out report.pdf --pdfa
@@ -97,7 +97,7 @@ Both steps read the same `NUTRIENT_API_KEY` environment variable.
 
 - Fail fast with a clear message when `NUTRIENT_API_KEY` (or the `NUTRIENT_DWS_API_KEY` fallback) is missing (unless `--html-only`).
 - Never log the API key or request headers.
-- Write outputs to explicit paths and print created file paths on success (one path per line on stdout; progress on stderr).
+- Write outputs to explicit paths and print each created file path (one path per line on stdout; progress on stderr). A debug HTML path prints as soon as the file exists, even if a later build step fails.
 - Non-zero exit on any failure; do not claim success unless the output file exists and is non-empty.
 
 ## Validation

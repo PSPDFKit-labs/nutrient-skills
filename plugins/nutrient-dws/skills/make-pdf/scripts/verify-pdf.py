@@ -377,7 +377,11 @@ def _input_files(input_path: Path) -> list[Path]:
     if not input_path.exists():
         raise OSError(f"Input does not exist: {input_path}")
     if input_path.is_dir():
-        files = sorted(input_path.glob("*.pdf"))
+        files = sorted(
+            path
+            for path in input_path.iterdir()
+            if path.is_file() and path.suffix.lower() == ".pdf"
+        )
         if not files:
             raise OSError(f"No .pdf files found in directory: {input_path}")
         return files
