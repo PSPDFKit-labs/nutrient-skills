@@ -1,5 +1,15 @@
 # Changelog
 
+## nutrient-dws remediate-pdf 1.0.0
+
+Initial release of the remediate-pdf skill in the `nutrient-dws` plugin (auto-tag only).
+
+**New:**
+- `autotag.py` doer script: uploads a PDF to `POST /accessibility/autotag` and writes back the PDF/UA-tagged document, via the dedicated DWS Accessibility API (separate `NUTRIENT_ACCESSIBILITY_API_KEY`)
+- Direct `httpx` transport (the `nutrient-dws` SDK exposes no Accessibility method); no silent fallback to the Processor key; `--url` SSRF validation; client-side 150 MiB check; quota-confirmation gate; API-key redaction from error output
+- `references/accessibility-api-reference.md` and `references/pdf-ua-wcag-compliance-notes.md`
+- Conformance **validation is intentionally not part of this skill**: the DWS Accessibility API exposes no validation endpoint yet. Check tagged output with the sibling `make-pdf` skill's `verify-pdf.py` (structural PDF/UA signals, optional veraPDF audit)
+
 ## nutrient-dws make-pdf 1.0.0
 
 Initial release of the make-pdf skill in the `nutrient-dws` plugin — Markdown/HTML to compliance-grade PDF via the DWS Build API.
