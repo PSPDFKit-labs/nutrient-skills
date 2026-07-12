@@ -1,0 +1,170 @@
+/* nutrient-make-pdf-theme: light */
+@page {
+  size: letter;
+  margin: 1in;
+}
+
+html {
+  color: #1f2933;
+  background: #ffffff;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.55;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+}
+
+main {
+  max-width: 100%;
+}
+
+.cover-block {
+  margin-bottom: 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #d9dee5;
+}
+
+.cover-block .eyebrow,
+.document-date,
+.memo-date,
+.memo-author,
+.subtitle {
+  color: #5b6775;
+}
+
+.cover-block .eyebrow {
+  margin: 0 0 1rem;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.document-date {
+  margin: 0.5rem 0 0;
+}
+
+.memo-header {
+  margin-bottom: 0.75rem;
+}
+
+.memo-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.memo-title-row h1,
+.memo-date,
+.memo-author,
+.subtitle {
+  margin: 0;
+}
+
+.memo-date {
+  flex: none;
+  font-size: 9.5pt;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: #111827;
+  line-height: 1.2;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+h1 {
+  margin: 0 0 0.7rem;
+  font-size: 26pt;
+}
+
+.content h1 {
+  margin-top: 1.8rem;
+  font-size: 21pt;
+}
+
+h2 {
+  margin: 1.5rem 0 0.45rem;
+  font-size: 16pt;
+}
+
+h3 {
+  margin: 1.2rem 0 0.4rem;
+  font-size: 13pt;
+}
+
+h4 {
+  margin: 1rem 0 0.35rem;
+  font-size: 11.5pt;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 0.75rem;
+}
+
+a {
+  color: #0b63ce;
+  text-decoration: underline;
+}
+
+table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+th,
+td {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #cfd6df;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #eef2f6;
+  font-weight: 700;
+}
+
+pre,
+code {
+  font-family: "Courier New", Courier, monospace;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+pre {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border: 1px solid #d6dde6;
+  background: #f7f9fb;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+blockquote {
+  margin: 1rem 0;
+  padding: 0.1rem 0 0.1rem 0.8rem;
+  border-left: 4px solid #8aa4c2;
+  color: #465261;
+}
+
+hr {
+  height: 1px;
+  margin: 1rem 0;
+  border: 0;
+  background: #d9dee5;
+}
