@@ -1,5 +1,16 @@
 # Changelog
 
+## nutrient-dws make-pdf 1.0.0
+
+Initial release of the make-pdf skill in the `nutrient-dws` plugin — Markdown/HTML to compliance-grade PDF via the DWS Build API.
+
+**New:**
+- `make-pdf.py`: single files or whole directories (non-recursive, 4 concurrent builds, per-file frontmatter/first-heading/filename titles, no overwriting); outputs standard PDF, accessible PDF/UA (`--accessible`), or archival PDF/A (`--pdfa`, all seven conformance levels), with diagonal text watermarks (`--watermark`)
+- Built-in conformance verification after every compliance build: exit `3` = generated but failed verification (PDF kept for inspection); `--no-verify` is the explicit opt-out; verification that cannot run also exits `3` rather than silently passing
+- `verify-pdf.py`: standalone structural PDF/UA-1 / PDF/A checker for any PDF or directory (pikepdf), escalating to a full veraPDF audit when `verapdf` is on PATH
+- `document`/`memo` templates with light/dark print CSS; real CommonMark+GFM parsing (`markdown-it-py`); documented Chromium limits (no CSS running headers or `target-counter` TOC page numbers)
+- Fully offline smoke suite (14 checks, no key or network)
+
 ## query 1.0.0
 
 Initial release of the query skill — ranked (BM-25) search over an already-extracted document, returning only the most relevant line windows instead of the whole file.

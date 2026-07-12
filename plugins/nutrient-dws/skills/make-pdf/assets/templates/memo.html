@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{title}}</title>
+  <style>
+{{styles}}
+  </style>
+</head>
+<body class="memo-template">
+  <main>
+    <header class="memo-header" aria-label="Memo metadata">
+      <div class="memo-title-row">
+        <h1>{{title}}</h1>
+        {{date_block}}
+      </div>
+      {{author_block}}
+      {{subtitle_block}}
+    </header>
+    <hr>
+    <article class="content">
+{{content}}
+    </article>
+  </main>
+</body>
+</html>
