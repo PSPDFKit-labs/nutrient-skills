@@ -65,7 +65,7 @@ Both steps read the same `NUTRIENT_API_KEY` environment variable.
 
 ## Implementation Rules
 
-- Fail fast with a clear message when `NUTRIENT_DWS_API_KEY` is missing (unless `--html-only`).
+- Fail fast with a clear message when `NUTRIENT_API_KEY` (or the `NUTRIENT_DWS_API_KEY` fallback) is missing (unless `--html-only`).
 - Never log the API key or request headers.
 - Write outputs to explicit paths and print created file paths on success (one path per line on stdout; progress on stderr).
 - Non-zero exit on any failure; do not claim success unless the output file exists and is non-empty.
