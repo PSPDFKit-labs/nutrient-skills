@@ -83,6 +83,7 @@ Generation is one step. For operations on the produced PDF, chain the sibling `d
 - Digitally sign the generated PDF: `document-processor-api/scripts/sign.py`
 - Redact content: `document-processor-api/scripts/redact-ai.py`
 - Merge with other documents: `document-processor-api/scripts/merge.py`
+- Make an EXISTING PDF accessible (auto-tag for PDF/UA): the sibling `remediate-pdf` skill — this skill generates new PDFs; that one fixes old ones. Its tagged output can be checked with `scripts/verify-pdf.py` here.
 
 Sibling scripts run fine from this skill's directory via a relative path. Example — "generate the report as PDF/A and sign it":
 
