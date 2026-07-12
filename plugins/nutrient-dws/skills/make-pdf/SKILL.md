@@ -1,6 +1,6 @@
 ---
 name: make-pdf
-description: Generate a finished PDF from Markdown or HTML via the Nutrient DWS Build API, with compliance-grade output options - accessible PDF/UA, archival PDF/A, and text watermarks. Use when the user asks to make, generate, or export a PDF from Markdown, HTML, notes, or a report, especially when the PDF must be accessible (PDF/UA, WCAG/ADA/EAA), archival (PDF/A), or watermarked. For processing an existing PDF (sign, redact, OCR, merge), use document-processor-api instead.
+description: Generate finished PDFs from Markdown or HTML via the Nutrient DWS Build API - single files or whole directories - with compliance-grade output options (accessible PDF/UA, archival PDF/A, text watermarks) and built-in conformance verification. Use when the user asks to make, generate, export, or batch-convert PDFs from Markdown, HTML, notes, or reports, especially when PDFs must be accessible (PDF/UA, WCAG/ADA/EAA), archival (PDF/A), or watermarked - or to check whether an existing PDF carries valid PDF/UA or PDF/A markers. For processing an existing PDF (sign, redact, OCR, merge), use document-processor-api instead.
 ---
 
 # Nutrient Make PDF
@@ -32,6 +32,7 @@ The `markdown-it-py` and `nutrient-dws` packages are fetched automatically on fi
 - Title-page metadata: `--title`, `--subtitle`, `--author`, `--date` (or set them in Markdown frontmatter; CLI flags win)
 - Inspect the rendered HTML without calling the API (offline, no key): `--html-only` (Markdown input only — errors on `.html` input, which already is the HTML)
 - Debug layout alongside the PDF: `--output-html` writes the intermediate HTML next to the PDF
+- Batch: point `--input` at a directory (with `--out <dir>`, required) to convert every `.md`/`.html` in it — see Batch Conversion below
 
 `--accessible` and `--pdfa` are mutually exclusive (one output type per build). Check exact arguments with `uv run scripts/make-pdf.py --help`.
 
@@ -41,6 +42,35 @@ The `markdown-it-py` and `nutrient-dws` packages are fetched automatically on fi
 - `.html` input is uploaded as-is; template, theme, and metadata flags do not apply and a warning names any that were passed. Use it when you already have styled HTML.
 - YAML frontmatter in Markdown (`title`, `subtitle`, `author`, `date`, `template`, `theme`) controls the cover block; CLI flags override frontmatter. When no title is given anywhere, the first `#` heading (or the filename) becomes the document title, so accessible output always has a real title.
 - External images require network fetches on the DWS side and referenced local images are not uploaded in v1 — embed images as `data:` URIs if they must appear.
+
+## Verification (built in)
+
+Compliance outputs are verified, not just labeled. With `--accessible` or `--pdfa`, the generated PDF is automatically checked after the build (`--no-verify` opts out); exit code 3 means "generated but failed verification" — the PDF is kept on disk so you can inspect it.
+
+Two assurance levels, and be honest about which one ran:
+
+- **Structural checks** (always available, via `scripts/verify-pdf.py`): the PDF/UA claim marker (`pdfuaid` XMP), tagged-structure signals (`MarkInfo`, `StructTreeRoot`), language, `DisplayDocTitle`, and a non-empty document title — or the PDF/A identification (`pdfaid` part + conformance, matched against the requested level). These catch real failures but are **not a full conformance audit**.
+- **Full audit** (optional): if `verapdf` is installed on PATH, the verifier also runs veraPDF for a genuine conformance validation and reports its verdict. Recommend installing veraPDF when the user's requirement is regulatory (ADA/EAA deadlines, records retention).
+
+The verifier also works standalone on any PDF, including ones this skill did not create:
+
+```bash
+uv run scripts/verify-pdf.py --input existing.pdf --profile pdfua
+uv run scripts/verify-pdf.py --input archive-dir/ --profile pdfa --pdfa-level pdfa-2b
+```
+
+## Batch Conversion
+
+`--input <directory>` converts every `.md`, `.markdown`, `.html`, and `.htm` file directly in that directory (non-recursive), up to 4 concurrently:
+
+```bash
+uv run scripts/make-pdf.py --input reports/ --out pdfs/ --accessible
+```
+
+- `--out <dir>` is required for directory input; outputs are named `<stem>.pdf`.
+- Per-document metadata comes from each file's frontmatter, first `#` heading, or filename — global `--title`/`--subtitle` are rejected for directory input. Shared flags (`--template`, `--theme`, `--author`, `--date`, `--watermark`, compliance and verify flags) apply to every file.
+- Failures don't stop the batch: a summary on stderr lists converted/verified/failed counts, stdout still prints only created file paths. Exit 0 = all good, 1 = at least one build failed, 3 = builds succeeded but at least one verification failed.
+- Batch mode never overwrites existing outputs (and refuses inputs that would collide on the same output name) — point `--out` at a fresh directory or remove stale files when regenerating.
 
 ## Layout Honesty (Chromium limits)
 
@@ -74,5 +104,5 @@ Both steps read the same `NUTRIENT_API_KEY` environment variable.
 
 Before calling this skill done after changes:
 
-- `uv run scripts/smoke-test.py` — renders every template x theme combination offline (no network, no key) and checks Markdown features (headings, tables, code blocks) survive the pipeline.
-- Generate one real PDF if a key is available, and verify it opens and is non-empty.
+- `uv run scripts/smoke-test.py` — offline (no network, no key): every template x theme combination, Markdown feature survival (headings, tables, code blocks), verifier checks against constructed fixtures, and batch discovery.
+- Generate one real PDF if a key is available; for compliance outputs let the built-in verification run (or run `verify-pdf.py` explicitly) rather than only checking the file is non-empty.

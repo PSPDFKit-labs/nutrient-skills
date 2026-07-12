@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["markdown-it-py[linkify,plugins]"]
+# dependencies = ["markdown-it-py[linkify,plugins]", "pikepdf"]
 # ///
 
 import importlib.util
@@ -10,10 +10,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pikepdf
+
 
 sys.dont_write_bytecode = True
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = Path(__file__).with_name("make-pdf.py")
+VERIFY_SCRIPT_PATH = Path(__file__).with_name("verify-pdf.py")
 
 
 def import_make_pdf():
@@ -26,6 +29,16 @@ def import_make_pdf():
     return module
 
 
+def import_verify_pdf():
+    spec = importlib.util.spec_from_file_location("verify_pdf", VERIFY_SCRIPT_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load {VERIFY_SCRIPT_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["verify_pdf"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def assert_contains(value: str, needle: str, label: str) -> None:
     if needle not in value:
         raise AssertionError(f"missing {label}: {needle}")
@@ -33,6 +46,7 @@ def assert_contains(value: str, needle: str, label: str) -> None:
 
 def main() -> None:
     make_pdf = import_make_pdf()
+    verify_pdf = import_verify_pdf()
     sample_path = SKILL_DIR / "assets" / "sample" / "sample.md"
     markdown = sample_path.read_text(encoding="utf-8")
     failures: list[str] = []
@@ -185,6 +199,87 @@ Trailing content must remain too.
         assert_contains(rendered, "<title>First Heading</title>", "first h1 title fallback")
     except Exception as e:
         failures.append(f"first h1 title fallback: {e}")
+
+    checks += 1
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            accessible_path = tmp_path / "accessible.pdf"
+            bare_path = tmp_path / "bare.pdf"
+
+            with pikepdf.new() as pdf:
+                pdf.add_blank_page(page_size=(72, 72))
+                pdf.Root.MarkInfo = pikepdf.Dictionary(Marked=True)
+                pdf.Root.StructTreeRoot = pikepdf.Dictionary(
+                    Type=pikepdf.Name.StructTreeRoot
+                )
+                pdf.Root.Lang = "en-US"
+                pdf.Root.ViewerPreferences = pikepdf.Dictionary(
+                    DisplayDocTitle=True
+                )
+                with pdf.open_metadata() as metadata:
+                    metadata["pdfuaid:part"] = "1"
+                    metadata["dc:title"] = "Accessible smoke test"
+                pdf.save(accessible_path)
+
+            with pikepdf.new() as pdf:
+                pdf.add_blank_page(page_size=(72, 72))
+                pdf.save(bare_path)
+
+            accessible_results = [
+                *verify_pdf.check_common(accessible_path),
+                *verify_pdf.check_pdfua(accessible_path),
+            ]
+            if not all(result.passed for result in accessible_results):
+                failed = [
+                    result.name for result in accessible_results if not result.passed
+                ]
+                raise AssertionError(
+                    f"accessible PDF failed structural checks: {', '.join(failed)}"
+                )
+
+            bare_pdfua = {
+                result.name: result for result in verify_pdf.check_pdfua(bare_path)
+            }
+            if bare_pdfua["pdfuaid:part"].passed:
+                raise AssertionError("bare PDF unexpectedly passed pdfuaid:part")
+            if bare_pdfua["MarkInfo/Marked"].passed:
+                raise AssertionError("bare PDF unexpectedly passed MarkInfo/Marked")
+
+            bare_pdfa = verify_pdf.check_pdfa(bare_path)
+            if all(result.passed for result in bare_pdfa):
+                raise AssertionError("bare PDF unexpectedly passed PDF/A identification")
+    except Exception as e:
+        failures.append(f"PDF conformance signals: {e}")
+
+    checks += 1
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            input_dir = tmp_path / "input"
+            out_dir = tmp_path / "output"
+            input_dir.mkdir()
+            (input_dir / "bravo.md").write_text("# Bravo\n", encoding="utf-8")
+            (input_dir / "alpha.md").write_text("# Alpha\n", encoding="utf-8")
+            (input_dir / "ignored.txt").write_text("ignored\n", encoding="utf-8")
+
+            jobs = make_pdf.plan_batch(input_dir, out_dir)
+            expected = [
+                (
+                    input_dir / "alpha.md",
+                    out_dir / "alpha.pdf",
+                    out_dir / "alpha.html",
+                ),
+                (
+                    input_dir / "bravo.md",
+                    out_dir / "bravo.pdf",
+                    out_dir / "bravo.html",
+                ),
+            ]
+            if jobs != expected:
+                raise AssertionError(f"unexpected batch plan: {jobs!r}")
+    except Exception as e:
+        failures.append(f"batch planning: {e}")
 
     if failures:
         print(f"FAIL: {len(failures)} of {checks} checks failed")

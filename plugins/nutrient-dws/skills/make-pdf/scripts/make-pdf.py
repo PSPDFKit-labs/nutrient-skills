@@ -9,8 +9,10 @@ import asyncio
 import html
 import os
 import re
+import shutil
 import sys
 import tempfile
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -33,6 +35,17 @@ PDFA_LEVELS = [
     "pdfa-3a",
     "pdfa-3u",
 ]
+INPUT_SUFFIXES = {".md", ".markdown", ".html", ".htm"}
+BatchJob = tuple[Path, Path, Path]
+
+
+@dataclass
+class ConversionResult:
+    input_path: Path
+    created_paths: list[Path] = field(default_factory=list)
+    build_error: Exception | None = None
+    verification_failed: bool = False
+    verified: bool = False
 
 
 def parse_frontmatter(markdown: str) -> tuple[dict[str, str], str]:
@@ -190,6 +203,30 @@ def html_path_for(output_path: Path) -> Path:
     return output_path.with_suffix(".html")
 
 
+def plan_batch(input_dir: Path, out_dir: Path) -> list[BatchJob]:
+    """Return deterministic, non-recursive conversion jobs without writing files."""
+    input_paths = sorted(
+        path
+        for path in input_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in INPUT_SUFFIXES
+    )
+    jobs = [
+        (input_path, out_dir / f"{input_path.stem}.pdf", out_dir / f"{input_path.stem}.html")
+        for input_path in input_paths
+    ]
+    output_owners: dict[Path, Path] = {}
+    for input_path, pdf_path, html_path in jobs:
+        for output_path in (pdf_path, html_path):
+            owner = output_owners.get(output_path)
+            if owner is not None:
+                raise ValueError(
+                    "Batch inputs would overwrite the same output "
+                    f"{output_path}: {owner.name}, {input_path.name}"
+                )
+            output_owners[output_path] = input_path
+    return jobs
+
+
 def load_template(name: str) -> str:
     return read_text(ASSETS_DIR / "templates" / f"{name}.html")
 
@@ -313,10 +350,19 @@ async def build_pdf(html_content: str, output_path: Path, args: argparse.Namespa
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Generate a PDF from Markdown or HTML via Nutrient DWS."
+        description="Generate PDFs from Markdown or HTML via Nutrient DWS.",
+        epilog="Exit codes: 0 = success; 1 = build/compose failure; "
+        "3 = generated but failed verification.",
     )
-    parser.add_argument("--input", required=True, help="Path to a Markdown or HTML file.")
-    parser.add_argument("--out", help="Output PDF path. Defaults to input path with .pdf.")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to a Markdown/HTML file or a directory of input files (non-recursive).",
+    )
+    parser.add_argument(
+        "--out",
+        help="Output PDF path, or required output directory for directory input.",
+    )
     parser.add_argument(
         "--template",
         choices=["document", "memo"],
@@ -359,23 +405,20 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write the composed HTML next to the PDF output path.",
     )
+    parser.add_argument(
+        "--verify",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Verify PDF structure (default: on for --accessible/--pdfa, off otherwise).",
+    )
     return parser
 
 
-async def main() -> None:
-    parser = build_parser()
-    args = parser.parse_args()
-
-    input_path = Path(args.input)
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input file does not exist: {input_path}")
-    if args.pdfa_level and not args.pdfa:
-        parser.error("--pdfa-level requires --pdfa.")
-    if args.pdfa and args.pdfa_level is None:
-        args.pdfa_level = "pdfa-2b"
-
-    output_path = output_path_for(input_path, args.out)
-    html_output_path = html_path_for(output_path)
+def validate_file_job(
+    input_path: Path,
+    html_output_path: Path,
+    args: argparse.Namespace,
+) -> None:
     is_html_input = input_path.suffix.lower() in {".html", ".htm"}
     if args.html_only and is_html_input:
         raise ValueError("--html-only cannot be used with HTML input; the input already is HTML.")
@@ -405,21 +448,193 @@ async def main() -> None:
                 f"Warning: HTML input ignores these flags: {', '.join(ignored_flags)}.",
                 file=sys.stderr,
             )
-    html_content = compose_input_html(input_path, args)
 
-    if args.html_only or args.output_html:
-        html_output_path.parent.mkdir(parents=True, exist_ok=True)
-        html_output_path.write_text(html_content, encoding="utf-8")
-        if not html_output_path.exists() or html_output_path.stat().st_size == 0:
-            raise RuntimeError(f"HTML output was not created or is empty: {html_output_path}")
-        # Print immediately so the debug artifact is reported even if the build fails.
-        print(html_output_path)
 
-    if args.html_only:
-        return
+async def verify_output(output_path: Path, args: argparse.Namespace) -> tuple[bool, bool]:
+    """Return whether verification passed and whether the verifier ran."""
+    uv = shutil.which("uv")
+    if uv is None:
+        print(
+            f"Warning: uv is not on PATH; skipping verification for {output_path}.",
+            file=sys.stderr,
+        )
+        return True, False
 
-    await build_pdf(html_content, output_path, args)
-    print(output_path)
+    if args.accessible:
+        profile = "pdfua"
+    elif args.pdfa:
+        profile = "pdfa"
+    else:
+        profile = "auto"
+    command = [
+        uv,
+        "run",
+        str(SKILL_DIR / "scripts" / "verify-pdf.py"),
+        "--input",
+        str(output_path),
+        "--profile",
+        profile,
+    ]
+    if args.pdfa:
+        command.extend(["--pdfa-level", args.pdfa_level])
+
+    process = await asyncio.create_subprocess_exec(
+        *command,
+        stdout=asyncio.subprocess.PIPE,
+    )
+    await process.communicate()
+    if process.returncode != 0:
+        print(
+            f"Verification failed for {output_path}; keeping the generated PDF.",
+            file=sys.stderr,
+        )
+        return False, True
+    return True, True
+
+
+async def convert_one(
+    input_path: Path,
+    output_path: Path,
+    html_output_path: Path,
+    args: argparse.Namespace,
+    *,
+    emit_paths: bool = False,
+    refuse_overwrite: bool = False,
+) -> ConversionResult:
+    result = ConversionResult(input_path=input_path)
+    try:
+        validate_file_job(input_path, html_output_path, args)
+        if refuse_overwrite:
+            guarded_outputs = []
+            if args.html_only or args.output_html:
+                guarded_outputs.append(html_output_path)
+            if not args.html_only:
+                guarded_outputs.append(output_path)
+            for guarded_output in guarded_outputs:
+                if guarded_output.exists():
+                    raise FileExistsError(
+                        f"Refusing to overwrite existing output: {guarded_output}"
+                    )
+        html_content = compose_input_html(input_path, args)
+
+        if args.html_only or args.output_html:
+            html_output_path.parent.mkdir(parents=True, exist_ok=True)
+            html_output_path.write_text(html_content, encoding="utf-8")
+            if not html_output_path.exists() or html_output_path.stat().st_size == 0:
+                raise RuntimeError(
+                    f"HTML output was not created or is empty: {html_output_path}"
+                )
+            result.created_paths.append(html_output_path)
+            if emit_paths:
+                print(html_output_path)
+
+        if args.html_only:
+            return result
+
+        await build_pdf(html_content, output_path, args)
+        result.created_paths.append(output_path)
+        if args.verify:
+            try:
+                passed, ran = await verify_output(output_path, args)
+                result.verified = ran and passed
+                result.verification_failed = not passed
+            except Exception as error:
+                print(
+                    f"Verification failed for {output_path}: {error}; "
+                    "keeping the generated PDF.",
+                    file=sys.stderr,
+                )
+                result.verification_failed = True
+        if emit_paths:
+            print(output_path)
+    except Exception as error:
+        result.build_error = error
+    return result
+
+
+async def run_single(input_path: Path, args: argparse.Namespace) -> int:
+    output_path = output_path_for(input_path, args.out)
+    result = await convert_one(
+        input_path,
+        output_path,
+        html_path_for(output_path),
+        args,
+        emit_paths=True,
+    )
+    if result.build_error:
+        raise result.build_error
+    return 3 if result.verification_failed else 0
+
+
+async def run_batch(input_dir: Path, out_dir: Path, args: argparse.Namespace) -> int:
+    jobs = plan_batch(input_dir, out_dir)
+    if not jobs:
+        raise ValueError(
+            f"No .md, .markdown, .html, or .htm files found in directory: {input_dir}"
+        )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    semaphore = asyncio.Semaphore(4)
+
+    async def run_job(job: BatchJob) -> ConversionResult:
+        async with semaphore:
+            return await convert_one(*job, args, refuse_overwrite=True)
+
+    results = await asyncio.gather(*(run_job(job) for job in jobs))
+    for result in results:
+        for created_path in result.created_paths:
+            print(created_path)
+
+    converted = sum(result.build_error is None for result in results)
+    summary = f"converted {converted}/{len(results)}"
+    if args.verify and not args.html_only:
+        verified = sum(result.verified for result in results)
+        summary += f"; verified {verified}/{converted}"
+    failures = [
+        result.input_path.name
+        for result in results
+        if result.build_error or result.verification_failed
+    ]
+    if failures:
+        summary += f"; failures: {', '.join(failures)}"
+    for result in results:
+        if result.build_error:
+            print(f"{result.input_path.name}: {result.build_error}", file=sys.stderr)
+    print(summary, file=sys.stderr)
+
+    if any(result.build_error for result in results):
+        return 1
+    if any(result.verification_failed for result in results):
+        return 3
+    return 0
+
+
+async def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    input_path = Path(args.input)
+    if not input_path.exists():
+        raise FileNotFoundError(f"Input file does not exist: {input_path}")
+    if args.pdfa_level and not args.pdfa:
+        parser.error("--pdfa-level requires --pdfa.")
+    if args.pdfa and args.pdfa_level is None:
+        args.pdfa_level = "pdfa-2b"
+    if args.verify is None:
+        args.verify = args.accessible or args.pdfa
+
+    if input_path.is_dir():
+        if not args.out:
+            parser.error("--out is required when --input is a directory.")
+        if args.title is not None or args.subtitle is not None:
+            parser.error("--title and --subtitle cannot be used with directory input.")
+        out_dir = Path(args.out)
+        if out_dir.exists() and not out_dir.is_dir():
+            raise ValueError(f"Batch output path is not a directory: {out_dir}")
+        return await run_batch(input_path, out_dir, args)
+
+    if not input_path.is_file():
+        raise ValueError(f"Input path is not a file or directory: {input_path}")
+    return await run_single(input_path, args)
 
 
 def handle_error(e: Exception) -> NoReturn:
@@ -429,6 +644,6 @@ def handle_error(e: Exception) -> NoReturn:
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        sys.exit(asyncio.run(main()))
     except Exception as e:
         handle_error(e)
