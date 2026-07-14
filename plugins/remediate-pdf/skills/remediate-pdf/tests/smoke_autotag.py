@@ -76,6 +76,19 @@ def test_disambiguation_present():
     assert "pdf/a" in body  # negative routing target named
 
 
+def test_bundled_verifier_in_sync_with_make_pdf():
+    """Repo-layout only: the bundled verify-pdf.py must match make-pdf's copy byte-for-byte."""
+    ours = SKILL_DIR / "scripts" / "verify-pdf.py"
+    theirs = REPO_ROOT / "plugins" / "make-pdf" / "skills" / "make-pdf" / "scripts" / "verify-pdf.py"
+    assert ours.is_file(), "bundled verify-pdf.py missing"
+    if not theirs.is_file():
+        print("SKIP test_bundled_verifier_in_sync_with_make_pdf (installed layout)")
+        return
+    assert ours.read_bytes() == theirs.read_bytes(), (
+        "verify-pdf.py copies diverged — sync plugins/make-pdf and plugins/remediate-pdf"
+    )
+
+
 # --- live smoke (requires NUTRIENT_ACCESSIBILITY_API_KEY) ------------------------------------
 def test_live_autotag():
     if not os.environ.get("NUTRIENT_ACCESSIBILITY_API_KEY"):

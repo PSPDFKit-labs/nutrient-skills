@@ -6,7 +6,7 @@ description: >-
   make an existing PDF accessible, auto-tag for screen readers, remediate for PDF/UA, or prepare a
   document for Section 508. Triggers include auto-tag PDF, make this PDF accessible, tag for screen
   readers, remediate accessibility, PDF/UA remediation, or Section 508 remediation. Auto-tag only:
-  check tagged output with the sibling make-pdf skill's verify-pdf.py. To generate a NEW accessible
+  check tagged output with the bundled verify-pdf.py. To generate a NEW accessible
   PDF from Markdown or HTML, use make-pdf instead. Converting to PDF/A, producing a PDF/UA output
   target via /build, merging, or signing go to document-processor-api.
 license: MIT
@@ -27,10 +27,10 @@ Accessibility API. The script uploads a PDF and writes back the remediated, tagg
 
 > **This skill ships auto-tag only.** The DWS Accessibility API does not currently expose a
 > separate accessibility conformance *validation* endpoint (confirmed by live probe — see
-> `references/accessibility-api-reference.md`). To check tagged output today, use the sibling
-> `make-pdf` skill's standalone verifier — `uv run ../make-pdf/scripts/verify-pdf.py --input
-> doc-tagged.pdf --profile pdfua` — which checks structural PDF/UA-1 signals and escalates to a
-> full veraPDF audit when veraPDF is installed. It is not a certification.
+> `references/accessibility-api-reference.md`). To check tagged output today, use the bundled
+> standalone verifier — `uv run scripts/verify-pdf.py --input doc-tagged.pdf --profile pdfua` —
+> which checks structural PDF/UA-1 signals and escalates to a full veraPDF audit when veraPDF is
+> installed. It is not a certification. (The same verifier ships with the `make-pdf` skill.)
 
 ## When to use
 
@@ -44,9 +44,9 @@ Existing PDF vs. new PDF is the first fork:
 
 - **Use this skill (`remediate-pdf`)** to fix a PDF that already exists — auto-tag it for
   accessibility.
-- **Use `make-pdf`** to generate a NEW compliant PDF from Markdown or HTML (PDF/UA or PDF/A
-  output with built-in verification). Its `verify-pdf.py` is also the way to check this skill's
-  tagged output.
+- **Use `make-pdf`** (its own plugin: `/plugin install make-pdf@nutrient-skills`) to generate a
+  NEW compliant PDF from Markdown or HTML (PDF/UA or PDF/A output with built-in verification).
+  This plugin bundles the same `verify-pdf.py` for checking tagged output.
 
 Both `document-processor-api` and this skill perform **PDF/UA auto-tagging using the same
 underlying engine** (the `pdf_to_pdfua` capability — confirmed from the live response's build
@@ -110,7 +110,7 @@ uv run scripts/autotag.py --url https://example.com/doc.pdf --output doc-tagged.
 
 - Do **not** represent auto-tagged output as guaranteed PDF/UA-compliant. Auto-tagging improves
   but does not guarantee conformance (Nutrient's benchmark cites ~96.5% PDF/UA conformance, not
-  100%). Check output with the sibling `make-pdf` skill's `verify-pdf.py` (and veraPDF for a full
+  100%). Check output with the bundled `verify-pdf.py` (and veraPDF for a full
   audit); treat the output as remediated, not certified.
 - Do **not** route `convert to PDF/A`, `produce PDF/UA` via `/build`, `merge`, or `sign` here —
   those belong to `document-processor-api`.
@@ -135,6 +135,7 @@ uv run scripts/autotag.py --url https://example.com/doc.pdf --output doc-tagged.
   Section 508 relationship.
 - Sibling `document-processor-api/SKILL.md` — `/build` PDF/UA output target and the same
   underlying auto-tagging engine.
-- Sibling `make-pdf/SKILL.md` — generate NEW compliant PDFs from Markdown/HTML, and
-  `make-pdf/scripts/verify-pdf.py` — the standalone structural checker for this skill's tagged
-  output.
+- `scripts/verify-pdf.py` — the bundled standalone structural checker for tagged output (the
+  identical file ships in the `make-pdf` plugin; keep them in sync).
+- The `make-pdf` skill (separate plugin: `make-pdf@nutrient-skills`) — generate NEW compliant
+  PDFs from Markdown/HTML.

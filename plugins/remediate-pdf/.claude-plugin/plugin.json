@@ -1,0 +1,13 @@
+{
+  "name": "remediate-pdf",
+  "version": "1.0.0",
+  "description": "Remediate existing PDFs: auto-tag with PDF/UA semantic structure via the Nutrient DWS Accessibility API, then check the result with the bundled verifier.",
+  "author": {
+    "name": "Nutrient",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "MIT",
+  "keywords": ["nutrient", "pdf", "accessibility", "remediation", "pdfua", "auto-tag", "section-508"]
+}

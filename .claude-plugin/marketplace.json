@@ -20,7 +20,56 @@
         "email": "support@nutrient.io"
       },
       "license": "MIT",
-      "keywords": ["nutrient", "dws", "document", "pdf", "processing", "convert", "ocr", "extract"]
+      "keywords": [
+        "nutrient",
+        "dws",
+        "document",
+        "pdf",
+        "processing",
+        "convert",
+        "ocr",
+        "extract"
+      ]
+    },
+    {
+      "name": "make-pdf",
+      "description": "Generate finished PDFs from Markdown or HTML \u2014 accessible PDF/UA, archival PDF/A, watermarks, batch \u2014 with built-in conformance verification.",
+      "version": "1.0.0",
+      "source": "./plugins/make-pdf",
+      "author": {
+        "name": "Nutrient",
+        "email": "support@nutrient.io"
+      },
+      "license": "MIT",
+      "keywords": [
+        "nutrient",
+        "pdf",
+        "generate",
+        "pdfua",
+        "pdfa",
+        "accessibility",
+        "compliance"
+      ]
+    },
+    {
+      "name": "remediate-pdf",
+      "description": "Remediate existing PDFs: auto-tag with PDF/UA semantic structure via the Nutrient DWS Accessibility API, then check the result with the bundled verifier.",
+      "version": "1.0.0",
+      "source": "./plugins/remediate-pdf",
+      "author": {
+        "name": "Nutrient",
+        "email": "support@nutrient.io"
+      },
+      "license": "MIT",
+      "keywords": [
+        "nutrient",
+        "pdf",
+        "accessibility",
+        "remediation",
+        "pdfua",
+        "auto-tag",
+        "section-508"
+      ]
     },
     {
       "name": "pdf-to-markdown",
@@ -32,7 +81,13 @@
         "email": "support@nutrient.io"
       },
       "license": "Proprietary",
-      "keywords": ["nutrient", "pdf", "markdown", "extract", "conversion"]
+      "keywords": [
+        "nutrient",
+        "pdf",
+        "markdown",
+        "extract",
+        "conversion"
+      ]
     },
     {
       "name": "pdf-to-text",
@@ -44,7 +99,14 @@
         "email": "support@nutrient.io"
       },
       "license": "Proprietary",
-      "keywords": ["nutrient", "pdf", "text", "plain-text", "extract", "conversion"]
+      "keywords": [
+        "nutrient",
+        "pdf",
+        "text",
+        "plain-text",
+        "extract",
+        "conversion"
+      ]
     },
     {
       "name": "query",
@@ -56,7 +118,14 @@
         "email": "support@nutrient.io"
       },
       "license": "Proprietary",
-      "keywords": ["nutrient", "query", "search", "bm25", "retrieval", "rag"]
+      "keywords": [
+        "nutrient",
+        "query",
+        "search",
+        "bm25",
+        "retrieval",
+        "rag"
+      ]
     },
     {
       "name": "nutrient-sdk-dev",
@@ -68,7 +137,25 @@
         "email": "support@nutrient.io"
       },
       "license": "MIT",
-      "keywords": ["nutrient", "sdk", "web", "mobile", "ios", "android", "flutter", "react-native", "python", "java", "nodejs", "dotnet", "document-engine", "document-authoring", "ai-assistant", "pdf", "development"]
+      "keywords": [
+        "nutrient",
+        "sdk",
+        "web",
+        "mobile",
+        "ios",
+        "android",
+        "flutter",
+        "react-native",
+        "python",
+        "java",
+        "nodejs",
+        "dotnet",
+        "document-engine",
+        "document-authoring",
+        "ai-assistant",
+        "pdf",
+        "development"
+      ]
     }
   ]
 }
