@@ -22,10 +22,15 @@ Install using the [Skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add pspdfkit-labs/nutrient-skills --skill document-processor-api
+npx skills add pspdfkit-labs/nutrient-skills --skill document-extraction-api
+npx skills add pspdfkit-labs/nutrient-skills --skill make-pdf
+npx skills add pspdfkit-labs/nutrient-skills --skill remediate-pdf
 npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-markdown
 npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-text
 npx skills add pspdfkit-labs/nutrient-skills --skill query
 ```
+
+The `nutrient-sdk-dev` plugin's 13 per-SDK skills install the same way (e.g. `--skill nutrient-web-sdk`).
 
 This works with Claude Code, Codex, Cursor, Gemini CLI, and [many other agents](https://github.com/vercel-labs/skills#supported-agents).
 
@@ -42,6 +47,11 @@ Both Claude Code and Codex support the `/plugin` command:
 ```
 /plugin marketplace add pspdfkit-labs/nutrient-skills
 /plugin install nutrient-dws@nutrient-skills
+/plugin install make-pdf@nutrient-skills
+/plugin install remediate-pdf@nutrient-skills
+/plugin install pdf-to-markdown@nutrient-skills
+/plugin install pdf-to-text@nutrient-skills
+/plugin install query@nutrient-skills
 /plugin install nutrient-sdk-dev@nutrient-skills
 ```
 
