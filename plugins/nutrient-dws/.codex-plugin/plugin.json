@@ -1,7 +1,7 @@
 {
   "name": "nutrient-dws",
   "version": "2.0.0",
-  "description": "Document processing skills powered by the Nutrient Document Web Services API.",
+  "description": "Document processing skills powered by the Nutrient Document Web Services API. Includes the document-processor-api skill (convert, merge, OCR, watermark, redact, sign, optimize) and the document-extraction-api skill (structural parse / Markdown via /extraction/parse).",
   "skills": "./skills/",
   "interface": {
     "displayName": "Nutrient DWS"
@@ -13,5 +13,14 @@
   "homepage": "https://nutrient.io",
   "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
   "license": "MIT",
-  "keywords": ["nutrient", "dws", "document", "pdf", "processing", "convert", "ocr", "extract"]
+  "keywords": [
+    "nutrient",
+    "dws",
+    "document",
+    "pdf",
+    "processing",
+    "convert",
+    "ocr",
+    "extract"
+  ]
 }
