@@ -1,0 +1,17 @@
+{
+  "name": "make-pdf",
+  "version": "1.0.0",
+  "description": "Generate finished PDFs from Markdown or HTML — accessible PDF/UA, archival PDF/A, watermarks, batch — with built-in conformance verification.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Make PDF"
+  },
+  "author": {
+    "name": "Nutrient",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "MIT",
+  "keywords": ["nutrient", "pdf", "generate", "pdfua", "pdfa", "accessibility", "compliance"]
+}

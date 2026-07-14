@@ -78,21 +78,10 @@ DWS renders HTML with headless Chromium (`printToPDF`). That means standard prin
 
 ## Chaining Other Document Operations
 
-Generation is one step. For operations on the produced PDF, chain the sibling `document-processor-api` skill scripts:
+Generation is one step. Related operations live in sibling plugins from the same marketplace:
 
-- Digitally sign the generated PDF: `document-processor-api/scripts/sign.py`
-- Redact content: `document-processor-api/scripts/redact-ai.py`
-- Merge with other documents: `document-processor-api/scripts/merge.py`
-- Make an EXISTING PDF accessible (auto-tag for PDF/UA): the sibling `remediate-pdf` skill — this skill generates new PDFs; that one fixes old ones. Its tagged output can be checked with `scripts/verify-pdf.py` here.
-
-Sibling scripts run fine from this skill's directory via a relative path. Example — "generate the report as PDF/A and sign it":
-
-```bash
-uv run scripts/make-pdf.py --input report.md --out report.pdf --pdfa
-uv run ../document-processor-api/scripts/sign.py --input report.pdf --out report-signed.pdf
-```
-
-Both steps read the same `NUTRIENT_API_KEY` environment variable.
+- Sign, redact, or merge the produced PDF: the `document-processor-api` skill — `/plugin install nutrient-dws@nutrient-skills`. Its scripts read the same `NUTRIENT_API_KEY`; run them from that skill's own directory, e.g. `uv run scripts/sign.py --input report.pdf --out report-signed.pdf`.
+- Make an EXISTING PDF accessible (auto-tag for PDF/UA): the `remediate-pdf` skill — `/plugin install remediate-pdf@nutrient-skills`. This skill generates new PDFs; that one fixes old ones (and bundles the same `verify-pdf.py`).
 
 ## Implementation Rules
 

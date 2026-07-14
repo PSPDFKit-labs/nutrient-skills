@@ -1,5 +1,15 @@
 # Changelog
 
+## make-pdf 1.0.1 / remediate-pdf 1.0.1
+
+Repackaged both skills as standalone plugins so the install id matches the skill.
+
+**Changed:**
+- Install ids are now `make-pdf@nutrient-skills` and `remediate-pdf@nutrient-skills` (previously both shipped inside `nutrient-dws`, whose id said nothing about either skill)
+- `remediate-pdf` now bundles its own copy of `verify-pdf.py`, so checking tagged output no longer reaches into the make-pdf plugin (a smoke-test assertion keeps the two copies byte-identical in-repo)
+- `make-pdf`'s chaining docs now reference `document-processor-api` (sign/redact/merge) and `remediate-pdf` as separately installable plugins
+- `nutrient-dws` returns to its API-scripts scope (`document-processor-api`, `document-extraction-api`)
+
 ## nutrient-dws remediate-pdf 1.0.0
 
 Initial release of the remediate-pdf skill in the `nutrient-dws` plugin (auto-tag only).

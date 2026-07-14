@@ -7,8 +7,8 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 | Plugin | Skill | Description |
 |--------|-------|-------------|
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-processor-api` | Convert, extract, transform, and secure documents via the Nutrient Document Web Services API |
-| [`nutrient-dws`](plugins/nutrient-dws) | `make-pdf` | Generate PDFs from Markdown or HTML — single files or whole directories — with accessible PDF/UA, archival PDF/A, and watermark outputs, plus built-in conformance verification |
-| [`nutrient-dws`](plugins/nutrient-dws) | `remediate-pdf` | Remediate existing PDFs: auto-tag with PDF/UA semantic structure (headings, lists, tables, reading order) via the Nutrient DWS Accessibility API (auto-tag only — verify output with the make-pdf skill's verify-pdf.py) |
+| [`make-pdf`](plugins/make-pdf) | `make-pdf` | Generate PDFs from Markdown or HTML — single files or whole directories — with accessible PDF/UA, archival PDF/A, and watermark outputs, plus built-in conformance verification |
+| [`remediate-pdf`](plugins/remediate-pdf) | `remediate-pdf` | Remediate existing PDFs: auto-tag with PDF/UA semantic structure (headings, lists, tables, reading order) via the Nutrient DWS Accessibility API (auto-tag only — verify output with the bundled verify-pdf.py) |
 | [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Extract text from PDFs as structured, semantic Markdown |
 | [`pdf-to-text`](plugins/pdf-to-text) | `pdf-to-text` | Extract layout-preserving plain text from PDFs |
 | [`query`](plugins/query) | `query` | Find the most relevant passages in an extracted document with ranked (BM-25) search |
