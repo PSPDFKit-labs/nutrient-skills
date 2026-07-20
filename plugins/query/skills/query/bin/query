@@ -19,6 +19,14 @@ case "$(uname -s)/$(uname -m)" in
     TARGET_ID="macos-arm64"
     BINARY_NAME="nutrient-macos-arm64"
     ;;
+  MINGW*/x86_64|MSYS*/x86_64|CYGWIN*/x86_64)
+    TARGET_ID="windows-amd64"
+    BINARY_NAME="nutrient-windows-amd64.exe"
+    ;;
+  MINGW*/aarch64|MSYS*/aarch64|CYGWIN*/aarch64)
+    TARGET_ID="windows-arm64"
+    BINARY_NAME="nutrient-windows-arm64.exe"
+    ;;
   *)
     echo "Unsupported platform: $(uname -s)/$(uname -m)" >&2
     exit 1
