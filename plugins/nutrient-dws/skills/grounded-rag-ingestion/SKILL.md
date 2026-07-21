@@ -118,10 +118,10 @@ Each JSONL line is one chunk:
 | `doc_id` | string | `--doc-id` or content hash of input bytes (never the basename) |
 | `source_doc` | string | input basename, **display-only** |
 | `element_type` | string | `paragraph`, `table`, `table_row`, `key_value_pair`, `formula`, `picture`, `handwriting` |
-| `page_index` | int | `element.page.pageIndex` |
+| `page_index` | int\|null | `element.page.pageIndex` (null when the element carries no page — never fabricated `0`) |
 | `reading_order` | int\|null | `element.readingOrder` (null sorts last) |
-| `bbox` | object | `{x, y, width, height}` (normalized at runtime — see OQ-1) |
-| `confidence` | float | element-level `confidence` (0–1) |
+| `bbox` | object\|null | `{x, y, width, height}` (normalized at runtime — see OQ-1; null when bounds are missing, never `{0,0,0,0}`) |
+| `confidence` | float\|null | element-level `confidence` (0–1); null when unknown |
 | `text` | string | element text per type-dispatch rules |
 | `chunking_warning` | string? | present **only** on table span-expansion fallback chunks |
 

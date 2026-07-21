@@ -13,9 +13,9 @@ One JSONL line per chunk. Every chunk carries:
 | `doc_id` | string | `--doc-id` or content hash | stable document identity; never the basename |
 | `source_doc` | string | input basename | **display-only**; may encode PII — sanitize via `--doc-id` for sensitive corpora |
 | `element_type` | string | `element.type` (normalized) | `paragraph`, `table`, `table_row`, `key_value_pair`, `formula`, `picture`, `handwriting`, `reading_order_window` |
-| `page_index` | int | `element.page.pageIndex` | 0-based |
+| `page_index` | int \| null | `element.page.pageIndex` | 0-based; `null` when the element carries no page (never fabricated as `0`) |
 | `reading_order` | int \| null | `element.readingOrder` | null sorts last on its page |
-| `bbox` | object | `element.bounds` | normalized to `{x, y, width, height}` — see §4 / OQ-1 |
+| `bbox` | object \| null | `element.bounds` | normalized to `{x, y, width, height}` — see §4 / OQ-1; `null` when bounds are missing or unrecognized (never a fabricated `{0,0,0,0}`) |
 | `confidence` | float \| null | `element.confidence` (0–1) | for key-value pairs, `relationshipConfidence` with element-level fallback |
 | `text` | string | per type-dispatch (§3, §5, §6) | the chunk's textual content |
 | `chunking_warning` | string (optional) | — | present **only** on table span-expansion fallback chunks; declared in the schema so strict validators do not break on the dense-table case |

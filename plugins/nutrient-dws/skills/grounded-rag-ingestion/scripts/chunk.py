@@ -80,8 +80,13 @@ def compute_doc_id(input_path: Path, supplied: str | None) -> str:
     return h[:12]
 
 
-def normalize_bbox(raw) -> dict:
-    """Normalize bounds to {x, y, width, height} (OQ-1: object or [x1,y1,x2,y2] array)."""
+def normalize_bbox(raw) -> dict | None:
+    """Normalize bounds to {x, y, width, height} (OQ-1: object or [x1,y1,x2,y2] array).
+
+    Returns None when the bounds are missing or unrecognized, rather than a fabricated
+    {0,0,0,0} rectangle: for a provenance skill, "location unknown" (null) must not be
+    reported as "located at the origin with zero size" (a claim a highlighter would trust).
+    """
     if isinstance(raw, dict):
         if "width" in raw and "height" in raw:
             return {
@@ -101,11 +106,15 @@ def normalize_bbox(raw) -> dict:
     if isinstance(raw, (list, tuple)) and len(raw) == 4:
         x1, y1, x2, y2 = raw
         return {"x": x1, "y": y1, "width": x2 - x1, "height": y2 - y1}
-    return {"x": 0, "y": 0, "width": 0, "height": 0}
+    return None
 
 
-def union_bbox(a: dict, b: dict) -> dict:
-    """Union of two normalized bboxes."""
+def union_bbox(a: dict | None, b: dict | None) -> dict | None:
+    """Union of two normalized bboxes; None-safe (an unknown bbox contributes nothing)."""
+    if a is None:
+        return b
+    if b is None:
+        return a
     x1 = min(a["x"], b["x"])
     y1 = min(a["y"], b["y"])
     x2 = max(a["x"] + a["width"], b["x"] + b["width"])
@@ -114,10 +123,27 @@ def union_bbox(a: dict, b: dict) -> dict:
 
 
 def _page_index(el: dict) -> int:
+    """Logic page index (for sorting, window boundaries): always an int, missing -> 0."""
     page = el.get("page")
     if isinstance(page, dict):
-        return page.get("pageIndex", 0)
-    return el.get("pageIndex", 0)
+        idx = page.get("pageIndex")
+        return idx if isinstance(idx, int) else 0
+    idx = el.get("pageIndex")
+    return idx if isinstance(idx, int) else 0
+
+
+def _page_index_field(el: dict):
+    """Emitted page_index: the real 0-based index, or None when the element carries no page.
+
+    Kept separate from _page_index so sorting/window logic stays on a total order (int) while the
+    chunk's provenance does not claim page 0 for an element whose page the API never reported.
+    """
+    page = el.get("page")
+    if isinstance(page, dict):
+        idx = page.get("pageIndex")
+        return idx if isinstance(idx, int) else None
+    idx = el.get("pageIndex")
+    return idx if isinstance(idx, int) else None
 
 
 def _reading_order(el: dict):
@@ -203,7 +229,7 @@ def _pair_bbox(pair: dict) -> dict:
     vb = normalize_bbox(v.get("bounds")) if isinstance(v, dict) and v.get("bounds") else None
     if kb and vb:
         return union_bbox(kb, vb)
-    return kb or vb or {"x": 0, "y": 0, "width": 0, "height": 0}
+    return kb or vb  # None when neither side carries usable bounds
 
 
 def _approx_tokens(text: str) -> int:
@@ -233,7 +259,7 @@ def build_chunks(
     chunks: list[dict] = []
     for idx, el in enumerate(ordered):
         etype = el.get("type", "unknown")
-        page = _page_index(el)
+        page = _page_index_field(el)
         ro = _reading_order(el)
         base = f"{doc_id}__p{page}_r{ro}_e{idx}"
         confidence = el.get("confidence")
@@ -304,10 +330,13 @@ def _build_windows(ordered: list, doc_id: str, source_doc: str, window_size: int
         bbox = normalize_bbox(win[0].get("bounds") or win[0].get("bbox"))
         for e in win[1:]:
             bbox = union_bbox(bbox, normalize_bbox(e.get("bounds") or e.get("bbox")))
-        page = _page_index(win[0])
+        page = _page_index_field(win[0])
         ro = _reading_order(win[0])
-        confs = [e.get("confidence") for e in win if e.get("confidence") is not None]
-        conf = min(confs) if confs else None
+        # A window's confidence is the min over its members, but ONLY when every member has a known
+        # confidence. If any member's confidence is unknown, report None (unknown) rather than
+        # min-of-the-known, which would falsely assert a floor for text we can't actually vouch for.
+        member_confs = [e.get("confidence") for e in win]
+        conf = min(member_confs) if member_confs and all(c is not None for c in member_confs) else None
         chunks.append(
             _chunk(f"{doc_id}__p{page}_r{ro}_e{i}_w{win_idx}", doc_id, source_doc,
                    "reading_order_window", page, ro, bbox, conf, text)
@@ -399,6 +428,23 @@ def mode_warns_empty(mode: str, elements: list) -> bool:
     return not any(e.get("type") in HIGH_MODE_ELEMENT_TYPES for e in elements)
 
 
+def extract_elements(response: dict) -> list:
+    """Return the spatial-parse element list, or raise ValueError on a malformed response.
+
+    A well-formed *empty* document (`output.elements == []`) is valid and returns `[]`. A response
+    that is missing `output` or whose `elements` is absent / not a list is malformed and must not be
+    silently coerced to `[]` — that path would report success and overwrite a good prior artifact
+    with an empty file after a billed API call that actually failed to return a usable shape.
+    """
+    output = response.get("output")
+    if not isinstance(output, dict):
+        raise ValueError("response has no 'output' object")
+    elements = output.get("elements")
+    if not isinstance(elements, list):
+        raise ValueError("response 'output.elements' is missing or not a list")
+    return elements
+
+
 # --------------------------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------------------------
@@ -448,6 +494,16 @@ async def main() -> None:
 
     # 1. Key check (R12) — before any SDK import so the error path is clean.
     _check_key_present()
+
+    # 1b. Numeric-argument sanity: a non-positive window makes degenerate chunks, and an
+    # out-of-range or NaN --min-confidence silently drops every numeric-confidence chunk.
+    if args.window_size <= 0:
+        print("Error: --window-size must be a positive integer.", file=sys.stderr)
+        sys.exit(1)
+    mc = args.min_confidence
+    if mc != mc or not (0.0 <= mc <= 1.0):  # mc != mc catches NaN
+        print("Error: --min-confidence must be a number between 0 and 1.", file=sys.stderr)
+        sys.exit(1)
 
     # 2. Local-file validation (R13).
     raw = str(args.input).strip()
@@ -499,7 +555,16 @@ async def main() -> None:
     if cost is not None:
         print(f"Usage: {cost} extraction credits ({args.mode} mode)", file=sys.stderr)
 
-    elements = response.get("output", {}).get("elements", [])
+    try:
+        elements = extract_elements(response)
+    except ValueError as e:
+        print(
+            f"Error: unexpected extraction response shape ({e}); refusing to write output. "
+            "The parse call was billed but returned no usable elements — not treating this as an "
+            "empty document.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Mode-gating warning (R7 / P2): KV & formula need understand+.
     if mode_warns_empty(args.mode, elements):

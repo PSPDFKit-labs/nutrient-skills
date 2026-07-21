@@ -171,6 +171,74 @@ def test_normalize_bbox_object_and_array():
     assert C.normalize_bbox([10, 20, 30, 50]) == {"x": 10, "y": 20, "width": 20, "height": 30}
 
 
+def test_normalize_bbox_missing_is_null_not_fabricated():
+    # Unknown location must be None, never a {0,0,0,0} rectangle a highlighter would trust.
+    assert C.normalize_bbox(None) is None
+    assert C.normalize_bbox({"foo": 1}) is None
+    assert C.normalize_bbox([1, 2, 3]) is None
+
+
+def test_union_bbox_is_none_safe():
+    b = {"x": 1, "y": 1, "width": 2, "height": 2}
+    assert C.union_bbox(None, b) == b
+    assert C.union_bbox(b, None) == b
+    assert C.union_bbox(None, None) is None
+
+
+def test_missing_bounds_emits_null_bbox():
+    els = [{"type": "paragraph", "page": {"pageIndex": 0}, "readingOrder": 0, "text": "no bounds"}]
+    c = C.build_chunks(els, "doc", "f.pdf")[0]
+    assert c["bbox"] is None
+
+
+def test_missing_page_emits_null_page_index_but_unique_id():
+    # An element with no page must report page_index null (not fabricated 0) and still get a
+    # collision-free chunk_id.
+    els = [
+        {"type": "paragraph", "readingOrder": 0, "text": "a"},
+        {"type": "paragraph", "readingOrder": 1, "text": "b"},
+    ]
+    chunks = C.build_chunks(els, "doc", "f.pdf")
+    assert all(c["page_index"] is None for c in chunks)
+    assert len({c["chunk_id"] for c in chunks}) == 2
+
+
+def test_window_confidence_null_when_any_member_unknown():
+    # A window mixing a known-confidence element with an unknown one must not assert a floor.
+    mixed = [
+        {"type": "paragraph", "page": {"pageIndex": 0}, "readingOrder": 0,
+         "confidence": 0.99, "text": "word " * 300},
+        {"type": "paragraph", "page": {"pageIndex": 0}, "readingOrder": 1, "text": "word " * 300},
+    ]
+    c = C.build_chunks(mixed, "doc", "f.pdf", strategy="reading-order-window", window_size=512)[0]
+    assert c["confidence"] is None
+    # All-known -> min is reported.
+    known = [
+        {"type": "paragraph", "page": {"pageIndex": 0}, "readingOrder": 0,
+         "confidence": 0.9, "text": "word " * 300},
+        {"type": "paragraph", "page": {"pageIndex": 0}, "readingOrder": 1,
+         "confidence": 0.7, "text": "word " * 300},
+    ]
+    c2 = C.build_chunks(known, "doc", "f.pdf", strategy="reading-order-window", window_size=512)[0]
+    assert c2["confidence"] == 0.7
+
+
+def test_extract_elements_valid_empty_vs_malformed():
+    # A well-formed empty document is valid and returns []; not the same as malformed.
+    assert C.extract_elements({"output": {"elements": []}}) == []
+    assert C.extract_elements({"output": {"elements": [{"type": "paragraph"}]}}) == \
+        [{"type": "paragraph"}]
+
+
+def test_extract_elements_raises_on_malformed():
+    for bad in ({}, {"output": None}, {"output": {}}, {"output": {"elements": "nope"}}):
+        try:
+            C.extract_elements(bad)
+            raise AssertionError(f"expected ValueError for {bad}")
+        except ValueError:
+            pass
+
+
 # --- skip pictures --------------------------------------------------------------------------
 def test_picture_without_alt_is_skipped():
     els = [{"type": "picture", "page": {"pageIndex": 0}, "readingOrder": 1, "altDescription": ""}]
