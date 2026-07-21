@@ -31,6 +31,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 BASE_URL = "https://api.nutrient.io"
 DOCUMENTS_URL = f"{BASE_URL}/viewer/documents"
@@ -164,7 +165,10 @@ def do_delete(client, key: str, document_id: str) -> bool:
     Confirmed live (U6): DELETE /viewer/documents/{id} -> 200, hard + synchronous.
     """
     try:
-        resp = client.delete(f"{DOCUMENTS_URL}/{document_id}", headers=_auth_headers(key))
+        # Percent-encode the id as a single path segment so a document_id carrying '/' or '..'
+        # (an unexpected server value) can't be normalized by httpx into a different endpoint.
+        resp = client.delete(f"{DOCUMENTS_URL}/{quote(document_id, safe='')}",
+                             headers=_auth_headers(key))
         return resp.status_code // 100 == 2
     except Exception as exc:  # noqa: BLE001 — cleanup is best-effort; never mask the original failure
         # Log why cleanup failed so the operator can tell transient (retry) from permanent
@@ -322,9 +326,16 @@ def cmd_upload_and_session(client, key: str, args) -> None:
     print(f"document_id={document_id}")
 
     # Every non-success exit of the post-upload session call must tear down the uploaded document
-    # (R-16) — a non-2xx status, a 2xx with a non-JSON body, or a 2xx missing the jwt key.
+    # (R-16) — a transport error before any response (timeout, DNS/TLS), a non-2xx status, a 2xx
+    # with a non-JSON body, or a 2xx missing the jwt key.
     body = build_session_body(document_id, perms, expires_in)
-    resp = client.post(SESSIONS_URL, headers=_auth_headers(key), json=body)
+    try:
+        resp = client.post(SESSIONS_URL, headers=_auth_headers(key), json=body)
+    except Exception as exc:  # noqa: BLE001 — the session call never returned; the upload is orphaned
+        _cleanup_and_report(client, key, document_id,
+                            f"session request errored ({type(exc).__name__})")
+        print(f"Error: session request failed: {redact(str(exc), key)}", file=sys.stderr)
+        sys.exit(1)
     if resp.status_code // 100 != 2:
         _cleanup_and_report(client, key, document_id, "session minting failed")
         _fail_http("session", resp, key)

@@ -352,6 +352,45 @@ def test_delete_subcommand_success_and_failure(capsys):
     assert e.value.code == 1
 
 
+def test_transport_error_on_session_cleans_up(tmp_path, capsys):
+    # R-16 gap: the session POST raises (timeout / DNS / TLS) before any response. The uploaded
+    # document must still be torn down — a received-error-only cleanup would orphan it.
+    calls = []
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF-1.4 minimal")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append((request.method, request.url.path))
+        if request.method == "POST" and request.url.path == "/viewer/documents":
+            return httpx.Response(200, json={"data": {"document_id": "DOC1"}})
+        if request.method == "POST" and request.url.path == "/viewer/sessions":
+            raise httpx.ConnectTimeout("simulated network failure")
+        if request.method == "DELETE":
+            return httpx.Response(200, text="OK")
+        return httpx.Response(404)
+
+    with _client(handler) as c, pytest.raises(SystemExit) as e:
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+    assert e.value.code == 1
+    assert ("DELETE", "/viewer/documents/DOC1") in calls, "transport error orphaned the upload"
+    assert "Cleaned up" in capsys.readouterr().err
+
+
+def test_delete_encodes_document_id_as_single_segment():
+    # A document_id carrying '/' or '..' must be percent-encoded into one path segment so httpx
+    # can't normalize it into a different endpoint.
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["raw"] = request.url.raw_path.decode()
+        return httpx.Response(200, text="OK")
+
+    with _client(handler) as c:
+        assert vs.do_delete(c, "KEY", "a/b/../c") is True
+    assert "a%2Fb%2F..%2Fc" in captured["raw"], captured["raw"]
+    assert "/viewer/documents/a/" not in captured["raw"], "path separator leaked from document_id"
+
+
 # --- CLI subprocess tests -------------------------------------------------------------------
 def test_help_lists_subcommands():
     # Scenario 1: --help exits 0 and lists all subcommands (argparse runs before httpx import).
