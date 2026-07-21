@@ -1,8 +1,15 @@
 ---
 name: pdf-to-markdown
-description: Extract text from PDFs as structured, semantic Markdown. Use when converting a PDF to Markdown, extracting text from a PDF, processing one or more PDFs into Markdown output, reading PDF contents for analysis, ingesting documents for RAG pipelines, preparing PDFs for LLM context, or any task where PDF text needs to be in a machine-readable format. ALWAYS use this skill when the user has a PDF and needs its content as text or Markdown — even if they don't explicitly say "convert to markdown".
+description: Extract text from a PDF as structured Markdown for analysis, RAG, or LLM context. Parse each PDF ONCE to a file (do not re-parse to search; do not read the PDF as an image). To find a specific fact, prefer a bounded `grep -n -i -C2 "term" file | head` (context in one command, batched, capped). Reach for the `query` skill (BM-25) only when a plain grep would flood — a common/ambiguous discriminator over a corpus too large to scan — where you need the top-k most-relevant passages, not every hit. For tables/invoices/columnar PDFs prefer the `pdf-to-text` skill. ALWAYS use this skill when the user has a PDF and needs its content as text or Markdown — even if they don't explicitly say "convert to markdown".
 license: Proprietary
 ---
+
+## Rules for agents (read first)
+
+- **Parse once** to a file — never re-parse the same PDF to search again.
+- **Default search = bounded grep:** `grep -n -i -C2 "term" file | head`. Get context in one command, batch lookups, cap with `head`.
+- **Use the `query` skill only when grep would flood** — the discriminating term is common/ambiguous AND the corpus is too large to scan (many matches to sift). query returns a bounded, ranked top-k (small `-k`), keeping context small. Add `--language <lang>` for non-English.
+- **Tables -> `pdf-to-text`.** **Never read the source PDF as an image.**
 
 # PDF to Markdown
 

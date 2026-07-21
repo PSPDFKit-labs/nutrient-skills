@@ -1,8 +1,15 @@
 ---
 name: query
-description: Find the most relevant passages in an already-extracted document (the text or Markdown output of `pdf-to-markdown` / `pdf-to-text`) without reading the whole thing into context — ranked (BM-25) search that returns only the top line windows. Use once such a file exists, to answer a question, locate a clause, or pull the right section from a long converted document. Prefer this over reading the entire converted file or grepping it repeatedly.
+description: Ranked (BM-25) retrieval over already-extracted text (output of `pdf-to-markdown`/`pdf-to-text`). For a specific term you can name, a bounded `grep -C "term" file | head` is leaner — use that first. Reach for query when a plain grep would return too many matches to scan (a common/ambiguous term over a corpus too large to read): it returns a bounded, ranked top-k instead of every hit, so it keeps context small. Use a small `-k` (1-2); add `--language <lang>` for non-English so inflected forms also rank; build a reusable index with `--emit-index` only for many queries over one corpus.
 license: Proprietary
 ---
+
+## Rules for agents (read first)
+
+- **For a specific term you can name, use bounded `grep -C "term" file | head` first** — it's leaner than ranked search.
+- **Use query when grep would FLOOD:** a common/ambiguous term over a corpus too large to scan (grep returns dozens of matches to sift). query ranks the best passages and returns a bounded top-k, so it keeps context small.
+- **Small `-k` (1-2)** for a single fact; **`--language <lang>`** for non-English so inflected/umlaut forms match (German `Antrag`<->`Anträge`).
+- Build an index (`--emit-index`) only for many queries over the same corpus.
 
 # Query a document
 

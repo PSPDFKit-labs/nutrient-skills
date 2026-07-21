@@ -1,8 +1,15 @@
 ---
 name: pdf-to-text
-description: Extract text from PDFs as layout-preserving plain text. Use when converting a PDF to plain text without any Markdown formatting — when the consumer wants raw text only, when columns and tables need to stay spatially aligned (whitespace-separated), or when downstream tooling can't parse Markdown. Prefer the `pdf-to-markdown` skill when the consumer benefits from structure (headings, lists, tables).
+description: Extract layout-preserving plain text from a PDF — best for TABLES, INVOICES, columnar/financial PDFs where cell values and alignment must survive. Parse each PDF ONCE to a file. To find a specific fact, prefer a bounded `grep -n -i -C2 "term" file | head`. Reach for the `query` skill (BM-25, small `-k`, `--language` for non-English) only when a plain grep would flood — a common term over a corpus too large to scan. Do not read the PDF as an image. Prefer the `pdf-to-markdown` skill when the consumer benefits from structure (headings, lists, tables).
 license: Proprietary
 ---
+
+## Rules for agents (read first)
+
+- Best for **tables, invoices, columnar/financial PDFs** — layout and cell values survive.
+- **Parse once**, then **default to bounded grep:** `grep -n -i -C2 "term" file | head`.
+- **Use the `query` skill only when grep would flood** — a common term over a corpus too large to scan; then small `-k`, and `--language <lang>` for non-English.
+- **Never read the source PDF as an image.**
 
 # PDF to Text
 
