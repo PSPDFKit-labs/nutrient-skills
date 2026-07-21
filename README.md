@@ -4,12 +4,12 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 
 ## Why these skills
 
-The document extraction skills aren't wrappers around a prompt. They run a real document engine locally, and the numbers are public and reproducible:
+The document extraction skills aren't wrappers around a prompt. They run a real document engine locally, and the accuracy numbers come from a public benchmark, not a set we picked ourselves:
 
-- **Fast and free.** `pdf-to-markdown` extracts digital-born PDFs at about **0.004 seconds per page** — roughly **134× faster than docling** at matching overall accuracy on a public 200-page benchmark. Free up to 1,000 documents a month, no key and no signup.
-- **Tuned for how agents actually work.** The skills tell the agent to parse once and search with a bounded `grep`, reaching for ranked retrieval only when a plain grep would flood context. In a head-to-head across three models that ran about **2× faster and 25% cheaper than an untuned agent at the same accuracy** — the win is the instructions, not just the tool.
-- **Accurate when the page is hard.** The licensed `--vision` tier adds a local machine-vision pipeline for scanned, photographed, and handwritten documents. On the same benchmark it tops every accuracy metric while still running faster than docling.
-- **Local by default.** Binaries are signed and run on macOS, Linux, and Windows. Nothing leaves your machine unless you deliberately call one of the cloud API skills.
+- **Fast and free.** `pdf-to-markdown` extracts digital-born PDFs at about **0.004 seconds per page** — roughly **134× faster than docling** at essentially the same overall accuracy (0.89 vs 0.89; docling edges it at the third decimal) on the public 200-document [opendataloader-bench](https://github.com/opendataloader-project/opendataloader-bench) corpus. Free up to 1,000 documents a month, no key and no signup.
+- **Tuned for how agents actually work.** The skills tell the agent to parse once and search with a bounded `grep`, reaching for ranked retrieval only when a plain grep would flood context. In our own agent benchmark (12 documents, three models) that ran about **2× faster and 25% cheaper than an untuned agent at the same accuracy** — the win is the instructions, not just the tool.
+- **Accurate when the page is hard.** The licensed `--vision` tier adds a local machine-vision pipeline for scanned, photographed, and handwritten documents. On the same corpus it tops every accuracy metric while still running faster than docling.
+- **Local by default.** Binaries are signed and run on macOS (Apple Silicon), Linux, and Windows. Your documents never leave your machine unless you deliberately call one of the cloud API skills.
 
 Method and full tables: [pdf-to-markdown benchmarks](https://github.com/PSPDFKit/pdf-to-markdown#benchmarks) and the [live results page](https://www.nutrient.io/api/data-extraction-api/benchmarks/).
 
