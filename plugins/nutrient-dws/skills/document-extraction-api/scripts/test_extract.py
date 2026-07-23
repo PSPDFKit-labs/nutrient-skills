@@ -556,6 +556,26 @@ def test_cli_requires_exactly_one_input_or_url(tmp_path, source_args):
     assert "exactly one of --input or --url" in result.stderr
 
 
+def test_cli_rejects_processor_and_schema_together(tmp_path):
+    schema_path = _write_schema(tmp_path / "schema.json")
+
+    result = _run_cli(
+        [
+            "--url",
+            "https://example.test/invoice.pdf",
+            "--schema",
+            schema_path,
+            "--processor",
+            "proc_invoice",
+            "--out",
+            tmp_path / "out.json",
+        ]
+    )
+
+    assert result.returncode == 1
+    assert "--processor and --schema are mutually exclusive" in result.stderr
+
+
 def test_cli_missing_input_file_exits_one(tmp_path):
     schema_path = _write_schema(tmp_path / "schema.json")
     missing_path = tmp_path / "missing.pdf"

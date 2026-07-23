@@ -76,6 +76,43 @@ usage after the call and gates high estimates behind `--yes`. See
 For PDF generation, conversion, OCR, redaction, signing, watermarking, or any `/build`-based
 workflow, use the sibling `document-processor-api` skill.
 
+## Stored processors (feature-gated)
+
+Tenants with the `data_extraction_processors` feature can run a stored processor instead of
+supplying an inline schema:
+
+```bash
+uv run scripts/extract.py --input invoice.pdf --processor proc_... --out result.json
+uv run scripts/extract.py --input invoice.pdf --processor proc_... \
+  --processor-version latest --out result.json
+```
+
+`--processor-version` accepts an integer or `latest`. Processor mode is mutually exclusive with
+`--schema`. The preflight cost estimate still applies, but it is approximate: the processor's
+mode is not known locally, so the estimate uses the local `--mode` value (default
+`understand`). The server's reported usage is authoritative.
+
+Manage stored processors with `scripts/processors.py`:
+
+```bash
+uv run scripts/processors.py list
+uv run scripts/processors.py create --config config.json [--name NAME] [--publish]
+uv run scripts/processors.py show --processor proc_...
+uv run scripts/processors.py rename --processor proc_... --name NAME
+uv run scripts/processors.py delete --processor proc_...
+uv run scripts/processors.py create-version --processor proc_... --config config.json
+uv run scripts/processors.py show-version --processor proc_... --version 2
+uv run scripts/processors.py publish-version --processor proc_... --version 2
+```
+
+The create and create-version JSON wrappers are inferred from the hosted API contract and
+pinned in mocked tests. Live-smoke both operations on a feature-enabled tenant before release.
+
+These commands require `data_extraction_processors`. If an uncoded feature-gated response is
+returned, the management CLI reports that the feature may not be enabled for the tenant and
+advises contacting Nutrient to enable it. A coded processor or version not-found error is
+reported as not-found, not as evidence that the feature is off.
+
 ## Setup
 
 DWS Extract is a separate product from DWS Processor and has its own API key.
