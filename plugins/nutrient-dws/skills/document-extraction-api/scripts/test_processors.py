@@ -123,6 +123,8 @@ def test_extract_rejects_processor_and_schema_together(
                 "create",
                 "--name",
                 "Invoices",
+                "--kind",
+                "extract",
                 "--config",
                 "{config}",
                 "--publish",
@@ -131,6 +133,7 @@ def test_extract_rejects_processor_and_schema_together(
             "/extraction/processors",
             {
                 "name": "Invoices",
+                "kind": "extract",
                 "config": PROCESSOR_CONFIG,
                 "publish": True,
             },
@@ -230,21 +233,46 @@ def test_processor_verb_uses_expected_method_path_and_body(
     P.main(argv)
 
 
-def test_create_omits_optional_name_and_publish_when_not_set(
+def test_create_sends_name_kind_and_config_without_publish(
     tmp_path,
     monkeypatch,
 ):
+    # The server requires both name and kind; publish is omitted when not set.
     config_path = tmp_path / "processor-config.json"
     config_path.write_text(json.dumps(PROCESSOR_CONFIG), encoding="utf-8")
     monkeypatch.setattr(P, "resolve_extract_key", lambda: "mock-key")
 
     def fake_request(_method, _path, **kwargs):
-        assert kwargs["json"] == {"config": PROCESSOR_CONFIG}
+        assert kwargs["json"] == {
+            "name": "Invoices",
+            "kind": "extract",
+            "config": PROCESSOR_CONFIG,
+        }
         return httpx.Response(201, json={"publicId": "proc_invoice"})
 
     monkeypatch.setattr(P, "_request", fake_request)
 
-    P.main(["create", "--config", str(config_path)])
+    P.main(["create", "--name", "Invoices", "--kind", "extract", "--config", str(config_path)])
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["create", "--config", "c.json"],  # missing --name and --kind
+        ["create", "--name", "Invoices", "--config", "c.json"],  # missing --kind
+        ["create", "--kind", "extract", "--config", "c.json"],  # missing --name
+    ],
+)
+def test_create_requires_name_and_kind(argv, monkeypatch):
+    # argparse rejects the missing required options with exit code 2 before any network call.
+    monkeypatch.setattr(
+        P,
+        "_request",
+        lambda *_a, **_k: pytest.fail("network must not be called"),
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        P.main(argv)
+    assert exc_info.value.code == 2
 
 
 def test_coded_processor_not_found_is_not_reported_as_feature_off(
@@ -258,8 +286,10 @@ def test_coded_processor_not_found_is_not_reported_as_feature_off(
         lambda *_args, **_kwargs: httpx.Response(
             404,
             json={
-                "code": "processor_not_found",
-                "message": "Processor was not found.",
+                "status": 404,
+                "errorCode": "processor_not_found",
+                "errorMessage": "Processor was not found.",
+                "errorDetails": {"source": "processors", "code": "processor_not_found"},
             },
         ),
     )
@@ -285,8 +315,10 @@ def test_coded_version_not_found_is_not_reported_as_feature_off(
         lambda *_args, **_kwargs: httpx.Response(
             404,
             json={
-                "error": {"code": "version_not_found"},
-                "message": "Version was not found.",
+                "status": 404,
+                "errorCode": "version_not_found",
+                "errorMessage": "Version was not found.",
+                "errorDetails": {"source": "processors", "code": "version_not_found"},
             },
         ),
     )
@@ -340,7 +372,12 @@ def test_rename_collision_is_specific_and_not_reported_as_feature_off(
         "_request",
         lambda *_args, **_kwargs: httpx.Response(
             409,
-            json={"message": "A processor with this name already exists."},
+            json={
+                "status": 409,
+                "errorCode": "name_taken",
+                "errorMessage": "A processor with that name already exists.",
+                "errorDetails": {"source": "processors", "code": "name_taken"},
+            },
         ),
     )
 
@@ -460,7 +497,15 @@ def test_coded_403_404_is_not_reported_as_feature_off(monkeypatch, capsys):
     monkeypatch.setattr(P, "resolve_extract_key", lambda: key)
     monkeypatch.setattr(
         P, "_request",
-        lambda *_a, **_k: httpx.Response(403, json={"code": "access_denied", "message": "nope"}),
+        lambda *_a, **_k: httpx.Response(
+            403,
+            json={
+                "status": 403,
+                "errorCode": "access_denied",
+                "errorMessage": "nope",
+                "errorDetails": {"source": "processors", "code": "access_denied"},
+            },
+        ),
     )
     with pytest.raises(SystemExit) as exc:
         P.main(["list"])

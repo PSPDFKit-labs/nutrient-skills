@@ -421,13 +421,16 @@ def main(argv: list[str] | None = None) -> None:
 
     if response.status_code // 100 != 2:
         if args.processor:
-            # When the data_extraction_processors feature is off, the server silently ignores the
-            # processor reference and parses the request as inline config (which has no schema) —
-            # surfacing as a validation error rather than a clean "feature off".
+            # A --processor run can fail for two distinct reasons the server doesn't spell out.
+            # Surface both so a missing PUBLISHED version isn't mistaken for a feature-gate issue.
             print(
-                "Note: --processor was set. If the data_extraction_processors feature is not "
-                "enabled for this tenant, the processor reference is ignored and the request "
-                "falls back to inline config (no schema), which fails validation.",
+                "Note: --processor was set and the request failed. Two common causes:\n"
+                "  - The processor has no PUBLISHED version yet: only published versions run, so a "
+                "freshly created draft returns version_not_found. Publish one first "
+                "(processors.py publish-version, or create with --publish), then retry.\n"
+                "  - The data_extraction_processors feature is not enabled for this tenant: the "
+                "server then ignores the processor reference and the request falls back to inline "
+                "config (no schema), which fails schema validation.",
                 file=sys.stderr,
             )
         _response_failure(

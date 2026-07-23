@@ -96,7 +96,7 @@ Manage stored processors with `scripts/processors.py`:
 
 ```bash
 uv run scripts/processors.py list
-uv run scripts/processors.py create --config config.json [--name NAME] [--publish]
+uv run scripts/processors.py create --kind extract --name NAME --config config.json [--publish]
 uv run scripts/processors.py show --processor proc_...
 uv run scripts/processors.py rename --processor proc_... --name NAME
 uv run scripts/processors.py delete --processor proc_...
@@ -104,6 +104,12 @@ uv run scripts/processors.py create-version --processor proc_... --config config
 uv run scripts/processors.py show-version --processor proc_... --version 2
 uv run scripts/processors.py publish-version --processor proc_... --version 2
 ```
+
+`create` requires `--kind` (`extract` or `parse`, matched against the endpoint at run time) and
+`--name`. **Only published versions run**, and `create` mints version 1 as a draft unless
+`--publish` is given — so the happy path is **create (`--publish`) → extract**. A `create`
+without `--publish` needs a later `publish-version` before `extract --processor` will resolve;
+until then the run returns `version_not_found` (which is distinct from the feature being off).
 
 The create and create-version JSON wrappers are inferred from the hosted API contract and
 pinned in mocked tests. Live-smoke both operations on a feature-enabled tenant before release.

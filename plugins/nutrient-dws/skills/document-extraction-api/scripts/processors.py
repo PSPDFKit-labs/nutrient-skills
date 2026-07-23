@@ -49,7 +49,13 @@ def _build_parser() -> argparse.ArgumentParser:
     create = subparsers.add_parser(
         "create", help="Create a processor and its first version."
     )
-    create.add_argument("--name", help="Optional processor name.")
+    create.add_argument("--name", required=True, help="Processor name (required).")
+    create.add_argument(
+        "--kind",
+        required=True,
+        choices=["extract", "parse"],
+        help="Processor kind — the endpoint it runs against (required).",
+    )
     create.add_argument(
         "--config",
         required=True,
@@ -116,9 +122,13 @@ def _operation(args: argparse.Namespace) -> tuple[str, str, dict[str, Any]]:
         return "GET", PROCESSORS_PATH, {}
 
     if args.command == "create":
-        body: dict[str, Any] = {"config": _load_config(args.config)}
-        if args.name is not None:
-            body["name"] = args.name
+        # The server requires both name and kind; config defaults to {} server-side
+        # but we always send the supplied config.
+        body: dict[str, Any] = {
+            "name": args.name,
+            "kind": args.kind,
+            "config": _load_config(args.config),
+        }
         if args.publish:
             body["publish"] = True
         return "POST", PROCESSORS_PATH, {"json": body}
@@ -152,9 +162,22 @@ def _response_payload(response: httpx.Response) -> Any:
 
 
 def _error_code(payload: Any) -> str | None:
-    """Extract an error code from the supported top-level/nested JSON shapes."""
+    """Extract an error code from the DWS error envelope.
+
+    DWS errors carry the code at top-level ``errorCode`` and, redundantly, at
+    ``errorDetails.code`` (see the hosted ProcessorController). Simpler
+    ``code`` / ``error.code`` shapes are tolerated as a fallback.
+    """
     if not isinstance(payload, dict):
         return None
+
+    code = payload.get("errorCode")
+    if isinstance(code, str):
+        return code
+
+    details = payload.get("errorDetails")
+    if isinstance(details, dict) and isinstance(details.get("code"), str):
+        return details["code"]
 
     code = payload.get("code")
     if isinstance(code, str):
@@ -170,11 +193,13 @@ def _error_code(payload: Any) -> str | None:
 
 def _error_detail(response: httpx.Response, payload: Any) -> str:
     if isinstance(payload, dict):
-        message = payload.get("message")
-        if not isinstance(message, str) and isinstance(payload.get("error"), dict):
-            message = payload["error"].get("message")
-        if isinstance(message, str) and message:
-            return message
+        # DWS uses "errorMessage"; tolerate a plain "message" or nested "error.message".
+        for candidate in (payload.get("errorMessage"), payload.get("message")):
+            if isinstance(candidate, str) and candidate:
+                return candidate
+        error = payload.get("error")
+        if isinstance(error, dict) and isinstance(error.get("message"), str) and error["message"]:
+            return error["message"]
         return json.dumps(payload, ensure_ascii=False)
     return response.text
 
