@@ -29,7 +29,8 @@ note describes the response shape so you can consume it.
 ## Notes
 
 - Citations are **on by default** (`options.includeCitations: true`); pass `--no-citations` for a
-  smaller, cheaper response with an empty `metadata`.
+  smaller response (empty `metadata`). Note: the +6 cr/page extract surcharge is flat, so
+  disabling citations shrinks the payload but does not lower the credit cost.
 - To walk citations for nested fields, traverse `output.data` and `output.metadata` in parallel
   by the same key path — do not assume a flat map.
 - Client-side the script validates only the unambiguous limits (root `object`, ≤ 32 KB UTF-8,

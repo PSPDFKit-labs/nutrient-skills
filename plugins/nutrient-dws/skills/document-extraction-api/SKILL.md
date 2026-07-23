@@ -134,7 +134,7 @@ pick is the highest minimum across all rules that fired. If none fired, use the 
 |-------------|------|---------------|------|-------|
 | RAG / search indexing / content migration — born-digital PDF | `text` | `markdown` | 1 cr/pg | Cheapest path; no OCR or AI needed |
 | RAG / search indexing — scanned or image-based PDF | `structure` | `markdown` | 1.5 cr/pg | OCR required before Markdown assembly |
-| Form / invoice extraction | `understand` | `spatial` | 9 cr/pg | AI classification for reliable key-value and table detection |
+| Form / invoice — enumerate *all* key-value regions (no target schema) | `understand` | `spatial` | 9 cr/pg | AI key-value + table detection. For *named* fields ("the invoice number and total"), use `extract` instead |
 | Layout-aware document understanding | `understand` | `spatial` | 9 cr/pg | Semantic paragraph roles (Title, SectionHeader, etc.) |
 | Deep visual understanding (charts, diagrams, alt text) | `agentic` | `spatial` | 18 cr/pg | VLM adds alt descriptions on every picture element |
 | **Default / ambiguous intent** | **`structure`** | **`spatial`** | **1.5 cr/pg** | Good balance: OCR + spatial elements, low cost |
@@ -156,7 +156,7 @@ uv run scripts/parse.py --input doc.pdf --out out.json
 # Markdown for RAG (text mode — cheapest)
 uv run scripts/parse.py --input doc.pdf --out out.md --output-format markdown --mode text
 
-# Form extraction (understand mode)
+# Enumerate all key-value regions of a form (understand mode) — for NAMED fields use extract
 uv run scripts/parse.py --input doc.pdf --out out.json --mode understand
 
 # Agentic (VLM alt text on pictures)
