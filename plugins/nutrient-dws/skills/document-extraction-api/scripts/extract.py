@@ -69,8 +69,18 @@ def build_instructions(
     mode,
     include_citations,
     store_run,
+    processor=None,
+    processor_version=None,
 ) -> dict:
-    """Build the extraction instruction fields without reordering the schema."""
+    """Build either inline configuration or a stored-processor reference."""
+    if processor:
+        result = {"processor": processor}
+        if processor_version is not None:
+            result["version"] = processor_version
+        if store_run:
+            result["storeRun"] = True
+        return result
+
     result = {
         "schema": schema,
         "parseConfig": {"mode": mode},
@@ -236,6 +246,23 @@ def _response_failure(message: str, response: httpx.Response, key: str) -> None:
     raise SystemExit(1)
 
 
+def _processor_version(value: str) -> int | str:
+    """Parse a processor version as a positive integer or the literal 'latest'."""
+    if value == "latest":
+        return value
+    try:
+        version = int(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(
+            "processor version must be a positive integer or 'latest'"
+        ) from e
+    if version < 1:
+        raise argparse.ArgumentTypeError(
+            "processor version must be a positive integer or 'latest'"
+        )
+    return version
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -245,14 +272,30 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--input", help="Path to a local input document.")
     parser.add_argument("--url", help="Public URL of the input document.")
-    parser.add_argument("--schema", required=True, help="Path to a JSON Schema file.")
+    parser.add_argument(
+        "--schema",
+        help="Path to a JSON Schema file (required unless --processor is set).",
+    )
+    parser.add_argument(
+        "--processor",
+        help="Public ID of a stored extraction processor (for example, proc_...).",
+    )
+    parser.add_argument(
+        "--processor-version",
+        type=_processor_version,
+        metavar="VERSION",
+        help="Stored processor version: a positive integer or 'latest'.",
+    )
     parser.add_argument("--out", required=True, help="Path for the full JSON response.")
     parser.add_argument("--instructions", help="Optional extraction instructions.")
     parser.add_argument(
         "--mode",
         choices=["structure", "understand", "agentic"],
         default="understand",
-        help="Parse mode used before field extraction (default: understand).",
+        help=(
+            "Parse mode used before inline field extraction; in processor mode it is "
+            "used only for the approximate cost estimate (default: understand)."
+        ),
     )
     parser.add_argument(
         "--no-citations",
@@ -282,6 +325,47 @@ def main(argv: list[str] | None = None) -> None:
         )
         raise SystemExit(1)
 
+    if args.processor and args.schema:
+        print(
+            "Error: --processor and --schema are mutually exclusive.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    if not args.processor and not args.schema:
+        print(
+            "Error: --schema is required unless --processor is set.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    if args.processor_version is not None and not args.processor:
+        print(
+            "Error: --processor-version requires --processor.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    # Support the documented combined syntax `--processor proc_id:VERSION` (public_ids are
+    # colon-free), in addition to the separate --processor-version flag.
+    if args.processor and ":" in args.processor:
+        base, _, ver = args.processor.rpartition(":")
+        # Exactly one optional colon, and both halves non-empty. Reject ":3" (empty id),
+        # "proc_x:" (empty version), and "proc:a:3" (id contains a colon — public_ids don't).
+        if not base or not ver or ":" in base:
+            print(
+                "Error: --processor must be 'proc_id' or 'proc_id:VERSION' with a non-empty "
+                f"id and version (got {args.processor!r}).",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+        if args.processor_version is not None:
+            print(
+                "Error: give the processor version once — either proc_id:VERSION or "
+                "--processor-version, not both.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+        args.processor = base
+        args.processor_version = _processor_version(ver)
+
     input_path = None
     if args.input:
         input_path = Path(assert_local_file(args.input, "input"))
@@ -289,13 +373,23 @@ def main(argv: list[str] | None = None) -> None:
             print(f"Error: input file not found: {args.input}", file=sys.stderr)
             raise SystemExit(1)
 
-    schema = load_schema(args.schema)
-    validate_schema(schema, args.instructions)
+    schema = None
+    schema_path = None
+    if not args.processor:
+        schema_path = Path(args.schema)
+        schema = load_schema(schema_path)
+        validate_schema(schema, args.instructions)
 
     out_path = Path(args.out)
-    _prepare_output(out_path, protected=[input_path, Path(args.schema)])
+    _prepare_output(out_path, protected=[input_path, schema_path])
 
     pages = _local_page_count(input_path) if input_path is not None else None
+    if args.processor:
+        print(
+            "Warning: processor-mode cost estimation is approximate; the stored "
+            f"processor's mode is unknown locally, so --mode {args.mode} is used.",
+            file=sys.stderr,
+        )
     ok, message = preflight(pages, args.mode, args.yes)
     if message:
         print(message, file=sys.stderr)
@@ -309,6 +403,8 @@ def main(argv: list[str] | None = None) -> None:
         args.mode,
         not args.no_citations,
         args.store_run,
+        args.processor,
+        args.processor_version,
     )
     instructions_json = json.dumps(
         instructions,
@@ -324,6 +420,19 @@ def main(argv: list[str] | None = None) -> None:
         raise SystemExit(1) from None
 
     if response.status_code // 100 != 2:
+        if args.processor:
+            # A --processor run can fail for two distinct reasons the server doesn't spell out.
+            # Surface both so a missing PUBLISHED version isn't mistaken for a feature-gate issue.
+            print(
+                "Note: --processor was set and the request failed. Two common causes:\n"
+                "  - The processor has no PUBLISHED version yet: only published versions run, so a "
+                "freshly created draft returns version_not_found. Publish one first "
+                "(processors.py publish-version, or create with --publish), then retry.\n"
+                "  - The data_extraction_processors feature is not enabled for this tenant: the "
+                "server then ignores the processor reference and the request falls back to inline "
+                "config (no schema), which fails schema validation.",
+                file=sys.stderr,
+            )
         _response_failure(
             f"Error: extraction request failed with HTTP {response.status_code}.",
             response,
