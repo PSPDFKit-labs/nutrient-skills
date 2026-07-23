@@ -5,8 +5,9 @@ and mocked tests live in `scripts/test_viewer_session.py` (`uv run scripts/test_
 this guide covers the live scenarios that need a real key.
 
 **v1 mode: delete-confirmed (U6).** `DELETE /viewer/documents/{id}` was confirmed live (200, hard +
-synchronous), so the upload smoke runs **with required teardown** of every uploaded document. For
-routine runs that only need a JWT, prefer the app-provided path (step 5) so no document is created.
+synchronous), so the upload smoke runs **with required teardown** of every uploaded document.
+Use the DWS-managed path for real sessions; `--app-provided` (step 5) is exercised only to verify
+its warnings — it is not the recommended default (its scope is unverified and its TTL is unbounded).
 
 Run all commands from the skill directory:
 
@@ -49,8 +50,8 @@ python3 -c "t=open('/tmp/viewer.jwt').read(); assert t.count('.')==2, 'not a 3-s
 rm -f /tmp/viewer.jwt
 ```
 
-(Omit `--jwt-out` to print the JWT once to stdout for interactive capture — but remember stdout is
-captured in CI logs and transcripts.)
+(Use `--print-jwt` instead of `--jwt-out` to echo the JWT to stdout for interactive capture — but
+remember stdout is captured in CI logs and transcripts. Omitting **both** is an error.)
 
 ## 4. Combined test (`upload-and-session` — primary live smoke; creates a document)
 

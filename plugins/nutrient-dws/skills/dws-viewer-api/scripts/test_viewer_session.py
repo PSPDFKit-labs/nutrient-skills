@@ -473,6 +473,33 @@ def test_upload_and_session_requires_sink_before_upload(tmp_path, capsys):
     assert "--print-jwt" in capsys.readouterr().err
 
 
+def test_unexpected_post_upload_error_triggers_cleanup(tmp_path, monkeypatch):
+    # Review P1: any UNEXPECTED post-upload failure (e.g. BrokenPipeError on the document_id
+    # print) must tear down the uploaded document, not orphan it.
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF-1.4 minimal")
+    handler, calls = _upload_then_session(httpx.Response(201, json={"jwt": "a.b.c"}))
+
+    def boom(*_a, **_k):
+        raise BrokenPipeError("stdout gone")
+
+    monkeypatch.setattr(vs, "_mint_and_emit", boom)
+    with _client(handler) as c, pytest.raises(BrokenPipeError):
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
+    assert ("DELETE", "/viewer/documents/DOC1") in calls, "unexpected post-upload error orphaned the upload"
+
+
+def test_app_provided_always_warns_about_ttl(capsys):
+    # Review P2: an ordinary app-provided run (default expires-in) must still warn that the TTL
+    # is API-controlled/unbounded — not only when a non-default --expires-in was passed.
+    def handler(request):
+        return httpx.Response(201, json={"jwt": "a.b.c"})
+    with _client(handler) as c:
+        vs.cmd_session(c, "KEY", _Args(app_provided=True, print_jwt=True))  # default expires_in
+    err = capsys.readouterr().err.lower()
+    assert "ttl is api-controlled" in err
+
+
 def test_malformed_jwt_shape_triggers_cleanup(tmp_path, capsys):
     # P1 (review): a 2xx session whose "jwt" is a non-string (dict/number) must not TypeError
     # past cleanup and orphan the upload — it routes to the missing-jwt cleanup path.

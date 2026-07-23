@@ -21,9 +21,10 @@ Security:
     browser JWT against the wrong tenant with no signal. A global DWS key must be opted into
     explicitly via --allow-global-key.
   - Sessions default to ["read"] (least privilege). write/download require explicit flags.
-  - The session JWT is a bearer credential. It is printed ONCE to stdout for capture and is
-    never logged at debug level; the API key is redacted from error output. stdout is captured
-    in CI logs and agent transcripts — for automation prefer --jwt-out <file> (written 0600).
+  - The session JWT is a bearer credential. It goes to a 0600 file (--jwt-out) OR, only with
+    the explicit --print-jwt opt-in, once to stdout — you must choose one, or the command errors
+    before any billed call. stdout is captured in CI logs and agent transcripts, so printing is
+    off by default. The API key is redacted from error output and never logged.
 """
 
 import argparse
@@ -308,12 +309,14 @@ def cmd_session(client, key: str, args) -> None:
             "app-provided JWT's blast radius is unknown. Use DWS-managed mode for least privilege.",
             file=sys.stderr,
         )
-        if args.expires_in != DEFAULT_EXPIRES_IN:
-            print(
-                "Warning: --expires-in does not apply to --app-provided sessions (the body is empty);"
-                " the API applies its own default TTL.",
-                file=sys.stderr,
-            )
+        # The empty body means --expires-in never applies here — the API controls the TTL, and this
+        # script's 1h default / 24h clamp do NOT bound it. Warn on every app-provided run, not only
+        # when a non-default --expires-in was passed.
+        print(
+            "Warning: TTL is API-controlled for --app-provided sessions (the body is empty); "
+            "--expires-in does not apply and this script does not bound the token's lifetime.",
+            file=sys.stderr,
+        )
         body = build_session_body(None, [], args.expires_in)
         jwt = do_session(client, key, body)
         emit_jwt(jwt, args.jwt_out, args.print_jwt)
@@ -344,6 +347,23 @@ def cmd_upload_and_session(client, key: str, args) -> None:
         print(f"Warning: {warn}", file=sys.stderr)
 
     document_id = do_upload(client, key, file_path)
+    # EVERYTHING after the upload runs under cleanup protection (R-16). The deliberate failure
+    # paths below already clean up and raise SystemExit (re-raised untouched here); this outer
+    # guard catches anything else — e.g. a BrokenPipeError on the document_id print, or a
+    # KeyboardInterrupt mid-mint — so no path can orphan the uploaded document.
+    try:
+        _mint_and_emit(client, key, args, document_id, perms, expires_in)
+    except SystemExit:
+        raise
+    except BaseException as exc:  # noqa: BLE001 — any unexpected post-upload failure must clean up
+        _cleanup_and_report(client, key, document_id,
+                            f"unexpected error after upload ({type(exc).__name__})")
+        raise
+
+
+def _mint_and_emit(client, key: str, args, document_id: str, perms, expires_in: int) -> None:
+    """Post-upload work (print id, mint session, emit JWT). Runs under cmd_upload_and_session's
+    cleanup guard so any failure tears down the uploaded document."""
     print(f"document_id={document_id}")
 
     # Every non-success exit of the post-upload session call must tear down the uploaded document
