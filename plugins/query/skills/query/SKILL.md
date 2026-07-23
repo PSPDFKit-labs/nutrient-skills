@@ -3,10 +3,11 @@ name: query
 description: >-
   Ranked (BM-25) retrieval over already-extracted text (output of `pdf-to-markdown`/`pdf-to-text`).
   For a specific term you can name, a bounded `grep -C "term" file | head` is leaner — use that first.
-  Reach for query when a plain grep would return too many matches to scan (a common/ambiguous term over
-  a corpus too large to read): it returns a bounded, ranked top-k instead of every hit, so it keeps
-  context small. Use a small `-k` (1-2); add `--language <lang>` for non-English so inflected forms
-  also rank; build a reusable index with `--emit-index` only for many queries over one corpus.
+  Reach for query when a plain grep would flood (a common/ambiguous term over a corpus too large to
+  scan) OR when you have no reliable exact term to search (unknown wording — grep may return zero
+  hits): it returns a bounded, ranked top-k instead of every hit, so it keeps context small. Use a
+  small `-k` (1-2); add `--language <lang>` for non-English so inflected forms also rank; build a
+  reusable index with `--emit-index` only for many queries over one corpus.
 license: Proprietary
 ---
 
