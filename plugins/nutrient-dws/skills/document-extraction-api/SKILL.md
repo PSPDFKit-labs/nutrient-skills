@@ -1,40 +1,80 @@
 ---
 name: document-extraction-api
 description: >-
-  Parse documents into a structural model or whole-document Markdown via the Nutrient Data
-  Extraction API (`/extraction/parse`). Use when the user wants to extract layout, tables,
-  key-value pairs, formulas, or images with bounding boxes; build a RAG ingestion pipeline;
-  produce Markdown for search indexing or content migration; or run layout-aware document
-  understanding. Triggers include parse this document, extract layout, RAG pipeline, document
-  understanding, form/invoice extraction, layout analysis, or whole-document Markdown.
+  Two primitives of the Nutrient Data Extraction API. `parse` (`/extraction/parse`) returns
+  the whole-document model — a structural JSON of typed elements with bounding boxes, or
+  whole-document Markdown — for RAG ingestion, search indexing, content migration, or
+  layout-aware understanding. `extract` (`/extraction/extract`) returns just the fields you
+  define in a JSON Schema, each with a per-field citation grounding it to a page region. Route
+  to `extract` for "pull the invoice number and total", "extract these fields", "map to my
+  schema", or "with citations"; route to `parse` for "parse this document", "whole-document
+  Markdown", "chunk for embeddings", or "extract every table/element" (no target schema).
+  Triggers include parse this document, extract layout, RAG pipeline, schema extraction, field
+  extraction, cited fields, invoice/form field extraction, document understanding.
 license: MIT
 metadata:
   author: nutrient-sdk
-  version: "1.0"
+  version: "1.1"
   homepage: "https://www.nutrient.io/api/"
   repository: "https://github.com/PSPDFKit-labs/nutrient-skills"
   compatibility: "Requires Python 3.10+, uv, and internet. Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Amp, or any Agent Skills-compatible product."
-  short-description: "Parse documents into a structural model or Markdown via Nutrient Data Extraction"
+  short-description: "Parse whole documents, or extract schema-defined fields with citations, via Nutrient Data Extraction"
 ---
 
 # Nutrient Data Extraction
 
-Use Nutrient DWS Extract for document-understanding workflows where you need typed
-elements (paragraphs, tables, formulas, pictures, key-value regions, handwriting) with
-bounding boxes — or a clean Markdown representation of the whole document.
+Two GA primitives, two scripts. **`parse`** (`scripts/parse.py`) returns the whole-document
+model — typed elements (paragraphs, tables, formulas, pictures, key-value regions,
+handwriting) with bounding boxes, or clean whole-document Markdown. **`extract`**
+(`scripts/extract.py`) returns just the fields you define in a JSON Schema, each grounded to a
+page region by a per-field citation.
+
+## Choosing parse vs extract
+
+| The request is about… | Use | Why |
+|---|---|---|
+| Named target fields — "the invoice number and total", "these fields", "map to my schema", "with citations" | **`extract`** | One call returns your fields, cited — no need to walk every element |
+| The whole document — "parse this", "whole-document Markdown", "chunk for embeddings", RAG, search indexing, migration | **`parse`** | Whole-document model / Markdown for open-ended retrieval |
+| Every table / all key-value regions (no target schema) | **`parse`** (spatial) | Enumerate all elements; `extract` needs a schema of what to pull |
+
+For RAG *chunking* of a parsed document, see the sibling `grounded-rag-ingestion` skill. For
+PDF generation, conversion, OCR, redaction, signing, or any `/build`-based workflow, use the
+sibling `document-processor-api` skill.
 
 ## When to use
 
-- Build a RAG ingestion pipeline: PDF -> Markdown -> chunks -> embeddings.
-- Index content for search or migrate documents into a new CMS.
-- Extract structured fields from forms and invoices (key/value pairs, tables, semantic regions).
-- Reconstruct page layout for downstream rendering or comparison.
-- Run layout-aware document understanding (semantic paragraph roles, table cell spans,
-  formulas in LaTeX, picture classification and alt descriptions).
+- Extract known fields with citations (invoice number, totals, dates, parties) → **`extract`**.
+- Build a RAG ingestion pipeline: PDF -> Markdown -> chunks -> embeddings → **`parse`**.
+- Index content for search or migrate documents into a new CMS → **`parse`**.
+- Reconstruct page layout, or run layout-aware understanding (semantic roles, table cell
+  spans, formulas in LaTeX, picture alt descriptions) → **`parse`**.
 
-This skill is **only** for `/extraction/parse`. For PDF generation, conversion, OCR,
-redaction, signing, watermarking, or any `/build`-based workflow, use the sibling
-`document-processor-api` skill.
+<!-- Roadmap: /extraction/generate_schema, /classify, and /form exist but are internal preview
+     (data_extraction_preview flag; 404 for public tenants) — not surfaced here yet. -->
+
+## `/extraction/extract` — schema field extraction with citations
+
+Define the fields you want in a JSON Schema (root `type: object`); `extract` returns
+`output.data` with those values and `output.metadata` with a per-field citation grounding each
+to a page region (`options.includeCitations` defaults on). Accepts a local file **or a URL**.
+
+```bash
+# Pull schema-defined fields from a local invoice, with citations (default)
+uv run scripts/extract.py --input invoice.pdf --schema fields.json --out result.json
+
+# From a URL, higher-accuracy mode, persist the run
+uv run scripts/extract.py --url https://example.com/form.pdf --schema fields.json \
+  --out result.json --mode understand --store-run
+```
+
+Cost: `extract` bills the chosen parse mode **plus a flat +6 credits/page** (structure 7.5,
+understand 15, agentic 24 cr/page). Extract has no `text` mode — the cheapest path is `structure`.
+The script prints the server's authoritative
+usage after the call and gates high estimates behind `--yes`. See
+`references/extract-output-and-citations.md` for the response shape and citation structure.
+
+For PDF generation, conversion, OCR, redaction, signing, watermarking, or any `/build`-based
+workflow, use the sibling `document-processor-api` skill.
 
 ## Setup
 
@@ -95,7 +135,7 @@ pick is the highest minimum across all rules that fired. If none fired, use the 
 |-------------|------|---------------|------|-------|
 | RAG / search indexing / content migration — born-digital PDF | `text` | `markdown` | 1 cr/pg | Cheapest path; no OCR or AI needed |
 | RAG / search indexing — scanned or image-based PDF | `structure` | `markdown` | 1.5 cr/pg | OCR required before Markdown assembly |
-| Form / invoice extraction | `understand` | `spatial` | 9 cr/pg | AI classification for reliable key-value and table detection |
+| Form / invoice — enumerate *all* key-value regions (no target schema) | `understand` | `spatial` | 9 cr/pg | AI key-value + table detection. For *named* fields ("the invoice number and total"), use `extract` instead |
 | Layout-aware document understanding | `understand` | `spatial` | 9 cr/pg | Semantic paragraph roles (Title, SectionHeader, etc.) |
 | Deep visual understanding (charts, diagrams, alt text) | `agentic` | `spatial` | 18 cr/pg | VLM adds alt descriptions on every picture element |
 | **Default / ambiguous intent** | **`structure`** | **`spatial`** | **1.5 cr/pg** | Good balance: OCR + spatial elements, low cost |
@@ -117,7 +157,7 @@ uv run scripts/parse.py --input doc.pdf --out out.json
 # Markdown for RAG (text mode — cheapest)
 uv run scripts/parse.py --input doc.pdf --out out.md --output-format markdown --mode text
 
-# Form extraction (understand mode)
+# Enumerate all key-value regions of a form (understand mode) — for NAMED fields use extract
 uv run scripts/parse.py --input doc.pdf --out out.json --mode understand
 
 # Agentic (VLM alt text on pictures)
