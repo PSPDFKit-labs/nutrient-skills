@@ -253,7 +253,7 @@ def validate_jwt_out(jwt_out: str | None) -> None:
         sys.exit(1)
 
 
-def emit_jwt(jwt: str, jwt_out: str | None) -> None:
+def emit_jwt(jwt: str, jwt_out: str | None, print_jwt: bool = False) -> None:
     if jwt_out:
         # Create/overwrite atomically at 0600, refusing a symlinked target (O_NOFOLLOW) so the
         # bearer credential never lands at a wider mode and a pre-planted symlink can't redirect
@@ -265,10 +265,25 @@ def emit_jwt(jwt: str, jwt_out: str | None) -> None:
             os.fchmod(f.fileno(), 0o600)
             f.write(jwt)
         print(f"jwt_written={jwt_out}")
-    else:
-        # Printed once to stdout for interactive capture. stdout is captured in CI logs and
-        # agent transcripts — prefer --jwt-out for automation. Never logged at debug level.
+    elif print_jwt:
+        # Explicit opt-in only. stdout is captured in CI logs and agent transcripts, so printing
+        # a browser bearer token is off by default (see require_jwt_sink) — prefer --jwt-out.
         print(f"jwt={jwt}")
+    else:  # defensive — require_jwt_sink() should have already errored before any billed call.
+        raise RuntimeError("no JWT sink: pass --jwt-out <file> or --print-jwt.")
+
+
+def require_jwt_sink(jwt_out: str | None, print_jwt: bool) -> None:
+    """A minted JWT is a browser bearer credential. Require an explicit sink BEFORE any billed
+    upload/mint: a 0600 file (--jwt-out, the default for automation) or an explicit --print-jwt
+    to echo to stdout. Printing to stdout is opt-in because agent/CI transcripts capture it."""
+    if not jwt_out and not print_jwt:
+        print(
+            "Error: choose where the session JWT goes — --jwt-out <file> (written 0600), or "
+            "--print-jwt to echo it to stdout (opt-in; stdout is captured in agent/CI logs).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 # --------------------------------------------------------------------------------------------
@@ -285,6 +300,7 @@ def cmd_upload(client, key: str, args) -> None:
 
 def cmd_session(client, key: str, args) -> None:
     validate_jwt_out(args.jwt_out)
+    require_jwt_sink(args.jwt_out, args.print_jwt)
     if args.app_provided:
         print(
             "Warning: --app-provided mints a session with an empty body. Its authorization scope is "
@@ -300,7 +316,7 @@ def cmd_session(client, key: str, args) -> None:
             )
         body = build_session_body(None, [], args.expires_in)
         jwt = do_session(client, key, body)
-        emit_jwt(jwt, args.jwt_out)
+        emit_jwt(jwt, args.jwt_out, args.print_jwt)
         return
 
     if not args.document_id:
@@ -312,7 +328,7 @@ def cmd_session(client, key: str, args) -> None:
         print(f"Warning: {warn}", file=sys.stderr)
     body = build_session_body(args.document_id, perms, expires_in)
     jwt = do_session(client, key, body)
-    emit_jwt(jwt, args.jwt_out)
+    emit_jwt(jwt, args.jwt_out, args.print_jwt)
 
 
 def cmd_upload_and_session(client, key: str, args) -> None:
@@ -321,6 +337,7 @@ def cmd_upload_and_session(client, key: str, args) -> None:
         print(f"Error: file not found: {args.file}", file=sys.stderr)
         sys.exit(1)
     validate_jwt_out(args.jwt_out)  # fail fast before upload so a bad path can't orphan a doc
+    require_jwt_sink(args.jwt_out, args.print_jwt)  # and require a sink before the billed upload
     perms = resolve_permissions(args.allow_write, args.allow_download, args.permissions)
     expires_in, warn = clamp_expires_in(args.expires_in)
     if warn:
@@ -352,7 +369,7 @@ def cmd_upload_and_session(client, key: str, args) -> None:
         sys.exit(1)
 
     try:
-        emit_jwt(jwt, args.jwt_out)
+        emit_jwt(jwt, args.jwt_out, args.print_jwt)
     except OSError as e:
         # The JWT file write failed AFTER a successful mint. Do NOT fall back to stdout — that would
         # leak the bearer token into the exact CI/transcript sink --jwt-out exists to avoid. Tear the
@@ -395,8 +412,11 @@ def _add_session_perm_args(p) -> None:
                    help=f"Session TTL in seconds (default {DEFAULT_EXPIRES_IN} = 1h; "
                         f"ceiling {MAX_EXPIRES_IN} = 24h).")
     p.add_argument("--jwt-out",
-                   help="Write the JWT to this file (mode 0600) instead of stdout. "
-                        "Preferred for automation — stdout is captured in CI logs/transcripts.")
+                   help="Write the JWT to this file (mode 0600). The secure default for "
+                        "automation — you must pass this or --print-jwt.")
+    p.add_argument("--print-jwt", action="store_true",
+                   help="Echo the JWT to stdout (opt-in). stdout is captured in CI logs and "
+                        "agent transcripts, so printing a browser bearer token is off by default.")
 
 
 def build_parser() -> argparse.ArgumentParser:

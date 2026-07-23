@@ -89,6 +89,7 @@ class _Args:
         self.permissions = kw.get("permissions")
         self.expires_in = kw.get("expires_in", vs.DEFAULT_EXPIRES_IN)
         self.jwt_out = kw.get("jwt_out")
+        self.print_jwt = kw.get("print_jwt", False)
         self.document_id = kw.get("document_id")
         self.app_provided = kw.get("app_provided", False)
         self.file = kw.get("file")
@@ -107,7 +108,7 @@ def test_session_default_body_is_read_only(capsys):
         return httpx.Response(201, json={"jwt": "a.b.c"})
 
     with _client(handler) as c:
-        vs.cmd_session(c, "KEY", _Args(document_id="DOC1"))
+        vs.cmd_session(c, "KEY", _Args(document_id="DOC1", print_jwt=True))
     perms = captured["body"]["allowed_documents"][0]["permissions"]
     assert perms == ["read"], f"expected least-privilege default, got {perms}"
     assert "jwt=a.b.c" in capsys.readouterr().out
@@ -122,7 +123,7 @@ def test_session_opt_in_body_has_write_download(capsys):
         return httpx.Response(201, json={"jwt": "a.b.c"})
 
     with _client(handler) as c:
-        vs.cmd_session(c, "KEY", _Args(document_id="DOC1", allow_write=True, allow_download=True))
+        vs.cmd_session(c, "KEY", _Args(document_id="DOC1", allow_write=True, allow_download=True, print_jwt=True))
     perms = captured["body"]["allowed_documents"][0]["permissions"]
     assert "write" in perms and "download" in perms
 
@@ -133,7 +134,7 @@ def test_app_provided_body_is_empty(capsys):
         return httpx.Response(201, json={"jwt": "a.b.c"})
 
     with _client(handler) as c:
-        vs.cmd_session(c, "KEY", _Args(app_provided=True))
+        vs.cmd_session(c, "KEY", _Args(app_provided=True, print_jwt=True))
     out = capsys.readouterr()
     assert "jwt=a.b.c" in out.out
     assert "app-provided" in out.err.lower()  # scope warning emitted to stderr
@@ -147,7 +148,7 @@ def test_jwt_only_to_stdout_never_stderr(capsys):
         return httpx.Response(201, json={"jwt": jwt})
 
     with _client(handler) as c:
-        vs.cmd_session(c, "SECRETKEY", _Args(document_id="DOC1"))
+        vs.cmd_session(c, "SECRETKEY", _Args(document_id="DOC1", print_jwt=True))
     out = capsys.readouterr()
     assert out.out.count(jwt) == 1, "JWT must print exactly once"
     assert jwt not in out.err, "JWT must not leak to stderr"
@@ -187,7 +188,7 @@ def test_partial_failure_invokes_cleanup(tmp_path, capsys):
 
     with _client(handler) as c:
         with pytest.raises(SystemExit) as e:
-            vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+            vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
     assert e.value.code == 1
     assert ("DELETE", "/viewer/documents/DOC1") in calls, "cleanup delete was not invoked"
     err = capsys.readouterr().err
@@ -217,7 +218,7 @@ def test_partial_failure_cleanup_also_fails_warns(tmp_path, capsys):
     handler, _ = _upload_then_session(httpx.Response(500, text="boom"),
                                       delete_response=httpx.Response(500, text="nope"))
     with _client(handler) as c, pytest.raises(SystemExit) as e:
-        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
     assert e.value.code == 1
     err = capsys.readouterr().err
     assert "WARNING" in err and "DOC1" in err and "manually" in err
@@ -229,7 +230,7 @@ def test_session_2xx_non_json_body_cleans_up(tmp_path, capsys):
     f = tmp_path / "doc.pdf"; f.write_bytes(b"%PDF-1.4")
     handler, calls = _upload_then_session(httpx.Response(200, text="<html>gateway</html>"))
     with _client(handler) as c, pytest.raises(SystemExit) as e:
-        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
     assert e.value.code == 1
     assert ("DELETE", "/viewer/documents/DOC1") in calls, "non-JSON 2xx must trigger cleanup"
     assert "no usable jwt" in capsys.readouterr().err
@@ -240,7 +241,7 @@ def test_session_2xx_missing_jwt_cleans_up(tmp_path, capsys):
     f = tmp_path / "doc.pdf"; f.write_bytes(b"%PDF-1.4")
     handler, calls = _upload_then_session(httpx.Response(200, json={"other": "field"}))
     with _client(handler) as c, pytest.raises(SystemExit) as e:
-        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
     assert e.value.code == 1
     assert ("DELETE", "/viewer/documents/DOC1") in calls
     assert "Cleaned up" in capsys.readouterr().err
@@ -261,7 +262,7 @@ def test_session_missing_jwt_exits(capsys):
         return httpx.Response(201, json={})  # 2xx but no jwt
 
     with _client(handler) as c, pytest.raises(SystemExit) as e:
-        vs.cmd_session(c, "KEY", _Args(document_id="DOC1"))
+        vs.cmd_session(c, "KEY", _Args(document_id="DOC1", print_jwt=True))
     assert e.value.code == 1
     assert "no usable jwt" in capsys.readouterr().err
 
@@ -274,7 +275,7 @@ def test_fail_http_redacts_key(capsys):
         return httpx.Response(401, text=f"unauthorized for key {key}")
 
     with _client(handler) as c, pytest.raises(SystemExit):
-        vs.cmd_session(c, key, _Args(document_id="DOC1"))
+        vs.cmd_session(c, key, _Args(document_id="DOC1", print_jwt=True))
     err = capsys.readouterr().err
     assert key not in err, "API key leaked into HTTP error output"
     assert "[REDACTED]" in err
@@ -341,14 +342,14 @@ def test_delete_subcommand_success_and_failure(capsys):
         return httpx.Response(200, text="OK")
 
     with _client(ok) as c:
-        vs.cmd_delete(c, "KEY", _Args(document_id="DOC1"))
+        vs.cmd_delete(c, "KEY", _Args(document_id="DOC1", print_jwt=True))
     assert "deleted=DOC1" in capsys.readouterr().out
 
     def gone(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404, text="Document not found")
 
     with _client(gone) as c, pytest.raises(SystemExit) as e:
-        vs.cmd_delete(c, "KEY", _Args(document_id="DOC1"))
+        vs.cmd_delete(c, "KEY", _Args(document_id="DOC1", print_jwt=True))
     assert e.value.code == 1
 
 
@@ -370,7 +371,7 @@ def test_transport_error_on_session_cleans_up(tmp_path, capsys):
         return httpx.Response(404)
 
     with _client(handler) as c, pytest.raises(SystemExit) as e:
-        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
     assert e.value.code == 1
     assert ("DELETE", "/viewer/documents/DOC1") in calls, "transport error orphaned the upload"
     assert "Cleaned up" in capsys.readouterr().err
@@ -448,6 +449,30 @@ def test_allow_global_key_opt_in_uses_fallback():
 
 
 # --- review-fix regressions --------------------------------------------------------------
+def test_session_requires_explicit_jwt_sink(capsys):
+    # Review P1: no --jwt-out and no --print-jwt must error, with NO network call.
+    def handler(request):  # any hit means we didn't gate before the network
+        raise AssertionError("network called without a JWT sink")
+    with _client(handler) as c, pytest.raises(SystemExit) as e:
+        vs.cmd_session(c, "KEY", _Args(document_id="DOC1"))  # neither sink
+    assert e.value.code == 1
+    assert "--jwt-out" in capsys.readouterr().err
+
+
+def test_upload_and_session_requires_sink_before_upload(tmp_path, capsys):
+    # Review P1: the sink check fires BEFORE the billed upload (no document is created).
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF-1.4 minimal")
+
+    def handler(request):
+        raise AssertionError("upload happened before the JWT-sink check")
+
+    with _client(handler) as c, pytest.raises(SystemExit) as e:
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))  # neither sink
+    assert e.value.code == 1
+    assert "--print-jwt" in capsys.readouterr().err
+
+
 def test_malformed_jwt_shape_triggers_cleanup(tmp_path, capsys):
     # P1 (review): a 2xx session whose "jwt" is a non-string (dict/number) must not TypeError
     # past cleanup and orphan the upload — it routes to the missing-jwt cleanup path.
@@ -479,7 +504,7 @@ def test_upload_and_session_happy_path_pins_wire_contract(tmp_path, capsys):
         return httpx.Response(404)
 
     with _client(handler) as c:
-        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
     assert seen["auth"] == "Bearer KEY"
     assert seen["upload_ct"] == "application/octet-stream"
     doc = seen["session_body"]["allowed_documents"][0]

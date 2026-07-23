@@ -113,17 +113,21 @@ DWS key, opt in explicitly with `--allow-global-key`, which warns at the point o
 # Upload a document to Nutrient storage; prints document_id
 uv run scripts/viewer-session.py upload --file doc.pdf
 
-# Mint a read-only session JWT for a DWS-managed document
-uv run scripts/viewer-session.py session --document-id <id>
+# Mint a read-only session JWT for a DWS-managed document (write the token to a 0600 file)
+uv run scripts/viewer-session.py session --document-id <id> --jwt-out session.jwt
 
 # Elevate permissions explicitly (least privilege is the default — see Rules)
-uv run scripts/viewer-session.py session --document-id <id> --allow-write --allow-download
+uv run scripts/viewer-session.py session --document-id <id> --allow-write --allow-download --jwt-out session.jwt
 
 # One-shot: upload then mint (the common case and the live smoke path)
-uv run scripts/viewer-session.py upload-and-session --file doc.pdf
+uv run scripts/viewer-session.py upload-and-session --file doc.pdf --jwt-out session.jwt
 
-# App-provided mode: mint a session with an empty body (no upload)
-uv run scripts/viewer-session.py session --app-provided
+# Interactive only: echo the JWT to stdout instead of a file (opt-in; stdout is logged)
+uv run scripts/viewer-session.py session --document-id <id> --print-jwt
+
+# App-provided mode: mint a session with an empty body (no upload). See Rules — scope is
+# UNVERIFIED and TTL is unbounded; do not use it as a default.
+uv run scripts/viewer-session.py session --app-provided --jwt-out session.jwt
 
 # Tear down a DWS-managed document when done (teardown)
 uv run scripts/viewer-session.py delete --document-id <id>
@@ -139,6 +143,10 @@ uv run scripts/viewer-session.py delete --document-id <id>
 
 ## Rules
 
+- **The JWT needs an explicit sink.** A session-minting command requires either `--jwt-out <file>`
+  (written `0600`) or `--print-jwt`. The default is the file — printing a browser bearer token to
+  stdout is opt-in because agent/CI transcripts capture stdout. The script errors before any billed
+  call if neither is given.
 - **Least privilege by default.** A session grants **`["read"]`** only. `write` and `download`
   require explicit `--allow-write` / `--allow-download` (or an explicit `--permissions` list). A
   minted JWT is a browser-facing bearer credential; defaulting to read-only limits the blast radius
@@ -146,10 +154,14 @@ uv run scripts/viewer-session.py delete --document-id <id>
 - **Short TTL.** Default session expiry is 1 hour. `--expires-in` can extend it up to a documented
   ceiling (24h); the script warns above a short-TTL threshold. A leaked long-TTL JWT is an open
   exfiltration window for as long as it is valid.
+- **`--app-provided` is not least-privilege — don't default to it.** It mints an empty-body session
+  whose authorization scope is **unverified** and whose TTL is **not bounded** by `--expires-in`
+  (the API applies its own). Use DWS-managed mode (`--document-id`) for any real session. Only reach
+  for `--app-provided` when you deliberately stream your own file to the browser SDK and have
+  independently confirmed the scope you get — not as a shortcut for smoke runs.
 - **Tear down uploaded documents.** Every document created with `upload` / `upload-and-session`
   draws down a metered quota (Free tier: 100 docs / 500 MiB / 100 uploads per month) and carries
-  data-retention exposure. Delete it when done with `viewer-session.py delete --document-id <id>`;
-  for routine smoke runs that only need a JWT, prefer `--app-provided` so no document is created.
+  data-retention exposure. Delete it when done with `viewer-session.py delete --document-id <id>`.
   Verify deletion by the document's absence from `GET /viewer/documents` (a GET-by-id always 404s
   and is not a liveness signal).
 - **Fail fast** on a missing key or missing required args, with a message naming
