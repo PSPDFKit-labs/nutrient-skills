@@ -8,7 +8,9 @@ description: >-
   that must prove which document region a retrieved answer came from. Triggers include grounded
   RAG, auditable RAG, RAG with provenance, chunk with bounding box, cite page, provenance-carrying
   chunks, confidence-aware chunking, or embedding pipeline. Not for cheap Markdown — use
-  document-extraction-api with `--output-format markdown` for that.
+  document-extraction-api with `--output-format markdown` for that. Not for known target fields
+  — if the user wants specific fields ("invoice number and total", "map to my schema", "return these fields cited"), use document-extraction-api's `extract` (one cited call), not whole-document
+  chunking.
 license: MIT
 metadata:
   author: nutrient-sdk
@@ -48,8 +50,12 @@ chunk boundary. No vector DB client, no embedding provider import.
   answer came from — the `bbox` + `page_index` tuple is the audit trail.
 
 **Not for** cheap whole-document Markdown — that stays in `document-extraction-api` with
-`--output-format markdown`. Not for vector-store upsert or embedding generation — this skill
-stops at the chunk JSONL.
+`--output-format markdown`. **Not for known target fields** — if the request names specific
+fields ("the invoice number and total", "extract these fields", "map to my schema", "return these fields cited"), use `document-extraction-api`'s `extract` (one call returns your schema's fields,
+each cited) instead of chunking the whole document for open-ended retrieval. Reach for this
+skill when retrieval is open-ended (semantic search over the whole document), not when the
+target fields are already known. Not for vector-store upsert or embedding generation — this
+skill stops at the chunk JSONL.
 
 ## Dependency: `document-extraction-api`
 
