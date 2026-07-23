@@ -441,6 +441,35 @@ def test_extract_processor_colon_and_flag_version_conflict(tmp_path, monkeypatch
     assert "version once" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("bad", [":3", "proc_x:", "proc:a:3"])
+def test_extract_processor_malformed_colon_syntax_rejected(bad, tmp_path, monkeypatch, capsys):
+    # PR-review P2: empty id, empty version, or a colon in the id must be rejected cleanly,
+    # not crash later (":3" previously produced an empty id -> Path(None)).
+    monkeypatch.setenv("NUTRIENT_EXTRACT_API_KEY", "k")
+    with pytest.raises(SystemExit) as exc:
+        E.main(["--url", "https://example.test/x.pdf", "--processor", bad,
+                "--out", str(tmp_path / "o.json")])
+    assert exc.value.code == 1
+    assert "--processor must be" in capsys.readouterr().err
+
+
+def test_coded_403_404_is_not_reported_as_feature_off(monkeypatch, capsys):
+    # PR-review P2: a CODED 403/404 (e.g. access_denied) must keep its code, not be labeled
+    # "feature may not be enabled" (only an UNCODED 403/404 is the feature-gate signal).
+    key = "mock-secret-key"
+    monkeypatch.setattr(P, "resolve_extract_key", lambda: key)
+    monkeypatch.setattr(
+        P, "_request",
+        lambda *_a, **_k: httpx.Response(403, json={"code": "access_denied", "message": "nope"}),
+    )
+    with pytest.raises(SystemExit) as exc:
+        P.main(["list"])
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "access_denied" in err
+    assert "feature may not be enabled" not in err
+
+
 def test_extract_processor_error_hints_feature_off(tmp_path, monkeypatch, capsys):
     # P2-2: a --processor run that errors hints the feature may be off (server ignores the ref).
     key = "mock-extract-key"

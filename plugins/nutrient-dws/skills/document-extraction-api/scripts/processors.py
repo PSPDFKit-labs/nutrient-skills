@@ -192,7 +192,10 @@ def _fail_for_response(response: httpx.Response, key: str) -> None:
         message = "Error: processor name collision (HTTP 409)"
         if detail:
             message += f": {detail}"
-    elif response.status_code in {403, 404}:
+    elif response.status_code in {403, 404} and code is None:
+        # Only an UNCODED 403/404 is the feature-gate signal (EnforceFeatures returns a bare
+        # 404 before the controller). A coded 403/404 (access_denied, route_not_found, …) is a
+        # real error and keeps its own code below — never mislabeled "feature off".
         message = FEATURE_MAY_BE_OFF_MESSAGE
     else:
         message = f"Error: processor request failed with HTTP {response.status_code}"

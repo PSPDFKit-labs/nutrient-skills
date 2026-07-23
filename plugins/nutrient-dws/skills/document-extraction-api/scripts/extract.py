@@ -347,6 +347,15 @@ def main(argv: list[str] | None = None) -> None:
     # colon-free), in addition to the separate --processor-version flag.
     if args.processor and ":" in args.processor:
         base, _, ver = args.processor.rpartition(":")
+        # Exactly one optional colon, and both halves non-empty. Reject ":3" (empty id),
+        # "proc_x:" (empty version), and "proc:a:3" (id contains a colon — public_ids don't).
+        if not base or not ver or ":" in base:
+            print(
+                "Error: --processor must be 'proc_id' or 'proc_id:VERSION' with a non-empty "
+                f"id and version (got {args.processor!r}).",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
         if args.processor_version is not None:
             print(
                 "Error: give the processor version once — either proc_id:VERSION or "
