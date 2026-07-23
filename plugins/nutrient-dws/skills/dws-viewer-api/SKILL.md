@@ -35,7 +35,9 @@ The DWS Viewer API is Nutrient's **cloud-hosted** document viewing service. The 
 server-side steps: upload a document to Nutrient-managed storage (or reference an app-provided one),
 mint a short-lived session JWT, and hand that JWT to the browser, where the Nutrient Web SDK renders
 a full viewer backed by Nutrient infrastructure — storage, streaming, annotation sync, and
-collaboration, with no developer-managed servers.
+collaboration, with no viewing/storage servers to run. (You still need a small trusted backend
+or serverless endpoint to mint the session token — the API key must never reach the browser;
+this skill is exactly that server-side step.)
 
 This skill covers the **server-side half** — upload and session mint, the part agents get wrong. The
 one-line browser embed (`NutrientViewer.load({ container, session })`) is documented in

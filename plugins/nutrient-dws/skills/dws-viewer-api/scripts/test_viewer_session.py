@@ -447,5 +447,47 @@ def test_allow_global_key_opt_in_uses_fallback():
     assert "pdf_live_global" not in (r.stdout + r.stderr), "fallback key value must not leak"
 
 
+# --- review-fix regressions --------------------------------------------------------------
+def test_malformed_jwt_shape_triggers_cleanup(tmp_path, capsys):
+    # P1 (review): a 2xx session whose "jwt" is a non-string (dict/number) must not TypeError
+    # past cleanup and orphan the upload — it routes to the missing-jwt cleanup path.
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF-1.4 minimal")
+    handler, calls = _upload_then_session(httpx.Response(200, json={"jwt": {"nested": "oops"}}))
+    with _client(handler) as c, pytest.raises(SystemExit) as e:
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), jwt_out=str(tmp_path / "j.txt")))
+    assert e.value.code == 1
+    assert ("DELETE", "/viewer/documents/DOC1") in calls, "malformed jwt orphaned the upload"
+
+
+def test_upload_and_session_happy_path_pins_wire_contract(tmp_path, capsys):
+    # P2 (review): positive combined-flow — assert exact methods/paths, bearer header, upload
+    # content-type, least-privilege permission body, and a bounded exp.
+    import time
+    f = tmp_path / "doc.pdf"
+    f.write_bytes(b"%PDF-1.4 minimal")
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.setdefault("auth", request.headers.get("Authorization"))
+        if request.method == "POST" and request.url.path == "/viewer/documents":
+            seen["upload_ct"] = request.headers.get("Content-Type")
+            return httpx.Response(200, json={"data": {"document_id": "DOC1"}})
+        if request.method == "POST" and request.url.path == "/viewer/sessions":
+            seen["session_body"] = json.loads(request.content)
+            return httpx.Response(201, json={"jwt": "a.b.c"})
+        return httpx.Response(404)
+
+    with _client(handler) as c:
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f)))
+    assert seen["auth"] == "Bearer KEY"
+    assert seen["upload_ct"] == "application/octet-stream"
+    doc = seen["session_body"]["allowed_documents"][0]
+    assert doc["document_id"] == "DOC1"
+    assert doc["permissions"] == ["read"], "least-privilege default not honored"
+    exp = seen["session_body"]["exp"]
+    assert isinstance(exp, int) and 0 < exp - int(time.time()) <= vs.MAX_EXPIRES_IN, "exp not bounded"
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([str(Path(__file__)), "-q"]))

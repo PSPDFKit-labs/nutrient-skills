@@ -173,8 +173,8 @@ def do_delete(client, key: str, document_id: str) -> bool:
     except Exception as exc:  # noqa: BLE001 — cleanup is best-effort; never mask the original failure
         # Log why cleanup failed so the operator can tell transient (retry) from permanent
         # (wrong key/account) — the caller still reports the orphan and never raises from here.
-        print(f"Warning: cleanup DELETE of {document_id} raised {type(exc).__name__}: {exc}",
-              file=sys.stderr)
+        print(f"Warning: cleanup DELETE of {document_id} raised {type(exc).__name__}: "
+              f"{redact(str(exc), key)}", file=sys.stderr)
         return False
 
 
@@ -189,7 +189,11 @@ def _parse_jwt(resp, key: str) -> str | None:
         data = resp.json()
     except (ValueError, TypeError):
         return None
-    return data.get("jwt") if isinstance(data, dict) else None
+    jwt = data.get("jwt") if isinstance(data, dict) else None
+    # Only a non-empty STRING is a usable JWT. A dict/number/list "jwt" would reach f.write()
+    # and raise TypeError past the OSError-only cleanup — orphaning the uploaded document — so
+    # coerce any non-string shape to None and let the missing-jwt cleanup path handle it.
+    return jwt if isinstance(jwt, str) and jwt else None
 
 
 def _cleanup_and_report(client, key: str, document_id: str | None, context: str) -> None:
