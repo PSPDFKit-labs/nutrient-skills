@@ -10,6 +10,7 @@ import json
 import os
 import stat
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -208,12 +209,11 @@ def _safe_write_json(out_path: Path, response: dict) -> None:
     interrupt after the billed call can't leave a partial file or destroy a prior good output.
     """
     data = json.dumps(response, indent=2)
-    tmp = out_path.with_name(f".{out_path.name}.tmp")
-    fd = os.open(
-        tmp,
-        os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW,
-        0o600,
-    )
+    # mkstemp creates a UNIQUE file with O_CREAT|O_EXCL at 0600 in the target dir — so a
+    # pre-planted hard link can't be truncated (no O_TRUNC on an existing name) and concurrent
+    # runs can't share a temp inode. Then fsync + atomic os.replace onto the final name.
+    fd, tmp_name = tempfile.mkstemp(dir=str(out_path.parent), prefix=f".{out_path.name}.", suffix=".tmp")
+    tmp = Path(tmp_name)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             os.fchmod(f.fileno(), 0o600)
