@@ -489,6 +489,58 @@ def test_unexpected_post_upload_error_triggers_cleanup(tmp_path, monkeypatch):
     assert ("DELETE", "/viewer/documents/DOC1") in calls, "unexpected post-upload error orphaned the upload"
 
 
+def test_cleanup_once_is_idempotent():
+    # Re-review P2: teardown records the delete the instant do_delete succeeds (before its diagnostic
+    # print), so repeated teardown calls — e.g. a deliberate path that cleaned up, then the outer
+    # guard firing again after a BrokenPipeError on that path's print — issue exactly one DELETE.
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append((request.method, request.url.path))
+        if request.method == "DELETE":
+            return httpx.Response(200, text="OK")
+        return httpx.Response(404)
+
+    with _client(handler) as c:
+        guard = vs._CleanupOnce(c, "KEY", "DOC1")
+        guard.report("first teardown")
+        guard.report("second teardown (outer guard after a broken-pipe print)")
+        assert guard.delete_quiet() is True
+    deletes = [x for x in calls if x[0] == "DELETE"]
+    assert len(deletes) == 1, f"expected exactly one DELETE across repeated teardown, got {len(deletes)}"
+
+
+def test_broken_pipe_on_cleanup_print_does_not_double_delete(tmp_path, monkeypatch):
+    # Re-review P2 (end-to-end): a deliberate cleanup path runs, then its "Cleaned up..." diagnostic
+    # print dies with BrokenPipeError (closed pipe). That escapes to the outer guard, which must NOT
+    # DELETE the already-deleted document a second time.
+    import io
+    f = tmp_path / "doc.pdf"; f.write_bytes(b"%PDF-1.4")
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append((request.method, request.url.path))
+        if request.method == "POST" and request.url.path == "/viewer/documents":
+            return httpx.Response(200, json={"data": {"document_id": "DOC1"}})
+        if request.method == "POST" and request.url.path == "/viewer/sessions":
+            raise httpx.ConnectError("connection reset")  # -> deliberate session-errored cleanup path
+        if request.method == "DELETE":
+            return httpx.Response(200, text="OK")
+        return httpx.Response(404)
+
+    class _BrokenStderr(io.StringIO):
+        def write(self, s):  # the closed pipe surfaces on the post-cleanup "Cleaned up..." print
+            if "Cleaned up" in s:
+                raise BrokenPipeError("stderr closed")
+            return super().write(s)
+
+    monkeypatch.setattr(sys, "stderr", _BrokenStderr())
+    with _client(handler) as c, pytest.raises(BrokenPipeError):
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), print_jwt=True))
+    deletes = [x for x in calls if x[0] == "DELETE"]
+    assert len(deletes) == 1, f"double-delete after broken-pipe cleanup print: {len(deletes)} DELETEs"
+
+
 def test_app_provided_always_warns_about_ttl(capsys):
     # Review P2: an ordinary app-provided run (default expires-in) must still warn that the TTL
     # is API-controlled/unbounded — not only when a non-default --expires-in was passed.

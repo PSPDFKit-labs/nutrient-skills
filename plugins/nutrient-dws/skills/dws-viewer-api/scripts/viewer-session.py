@@ -197,21 +197,52 @@ def _parse_jwt(resp, key: str) -> str | None:
     return jwt if isinstance(jwt, str) and jwt else None
 
 
-def _cleanup_and_report(client, key: str, document_id: str | None, context: str) -> None:
-    """Best-effort delete of an uploaded document + report whether an orphan remains (R-16).
+class _CleanupOnce:
+    """Idempotent teardown for the post-upload region (R-16).
+
+    A deliberate failure path deletes the uploaded document and then prints a diagnostic before
+    raising SystemExit. If that print itself raises (e.g. BrokenPipeError on a closed pipe), the
+    exception escapes to cmd_upload_and_session's outer guard, which would otherwise DELETE the
+    document a second time. This guard records the delete the instant do_delete succeeds — BEFORE
+    any diagnostic print — so every later teardown call is a no-op and no path can double-delete.
 
     document_id is None for paths that never uploaded (nothing to clean).
     """
-    if document_id is None:
-        return
-    if do_delete(client, key, document_id):
-        print(f"Cleaned up uploaded document {document_id} after {context}.", file=sys.stderr)
-    else:
-        print(
-            f"WARNING: {context}, AND cleanup of uploaded document {document_id} failed. "
-            f"Delete it manually: DELETE {DOCUMENTS_URL}/{document_id}",
-            file=sys.stderr,
-        )
+
+    def __init__(self, client, key: str, document_id: str | None):
+        self._client = client
+        self._key = key
+        self._document_id = document_id
+        self._deleted = document_id is None  # nothing uploaded -> nothing left to clean
+
+    def _delete_once(self) -> bool:
+        """Delete the document unless it is already gone. Return True once it is gone (deleted now,
+        deleted earlier this run, or never uploaded); False only when a delete was attempted and
+        failed — leaving it un-deleted so a later guard call may retry."""
+        if self._deleted:
+            return True
+        if do_delete(self._client, self._key, self._document_id):
+            self._deleted = True  # set BEFORE any print, so a print failure can't re-delete
+            return True
+        return False
+
+    def report(self, context: str) -> None:
+        """Best-effort delete of the uploaded document + report whether an orphan remains (R-16)."""
+        if self._document_id is None:
+            return
+        if self._delete_once():
+            print(f"Cleaned up uploaded document {self._document_id} after {context}.", file=sys.stderr)
+        else:
+            print(
+                f"WARNING: {context}, AND cleanup of uploaded document {self._document_id} failed. "
+                f"Delete it manually: DELETE {DOCUMENTS_URL}/{self._document_id}",
+                file=sys.stderr,
+            )
+
+    def delete_quiet(self) -> bool:
+        """Delete without the standard 'Cleaned up...' line (the emit-JWT failure path prints its own
+        token-safe message). Return whether the document is gone. Idempotent."""
+        return self._delete_once()
 
 
 def do_session(client, key: str, body: dict) -> str:
@@ -347,21 +378,23 @@ def cmd_upload_and_session(client, key: str, args) -> None:
         print(f"Warning: {warn}", file=sys.stderr)
 
     document_id = do_upload(client, key, file_path)
+    cleanup = _CleanupOnce(client, key, document_id)
     # EVERYTHING after the upload runs under cleanup protection (R-16). The deliberate failure
     # paths below already clean up and raise SystemExit (re-raised untouched here); this outer
     # guard catches anything else — e.g. a BrokenPipeError on the document_id print, or a
-    # KeyboardInterrupt mid-mint — so no path can orphan the uploaded document.
+    # KeyboardInterrupt mid-mint — so no path can orphan the uploaded document. Teardown is
+    # idempotent (see _CleanupOnce), so a print failure on an already-cleaned path can't double-delete.
     try:
-        _mint_and_emit(client, key, args, document_id, perms, expires_in)
+        _mint_and_emit(client, key, args, document_id, perms, expires_in, cleanup)
     except SystemExit:
         raise
     except BaseException as exc:  # noqa: BLE001 — any unexpected post-upload failure must clean up
-        _cleanup_and_report(client, key, document_id,
-                            f"unexpected error after upload ({type(exc).__name__})")
+        cleanup.report(f"unexpected error after upload ({type(exc).__name__})")
         raise
 
 
-def _mint_and_emit(client, key: str, args, document_id: str, perms, expires_in: int) -> None:
+def _mint_and_emit(client, key: str, args, document_id: str, perms, expires_in: int,
+                   cleanup: "_CleanupOnce") -> None:
     """Post-upload work (print id, mint session, emit JWT). Runs under cmd_upload_and_session's
     cleanup guard so any failure tears down the uploaded document."""
     print(f"document_id={document_id}")
@@ -373,17 +406,16 @@ def _mint_and_emit(client, key: str, args, document_id: str, perms, expires_in: 
     try:
         resp = client.post(SESSIONS_URL, headers=_auth_headers(key), json=body)
     except Exception as exc:  # noqa: BLE001 — the session call never returned; the upload is orphaned
-        _cleanup_and_report(client, key, document_id,
-                            f"session request errored ({type(exc).__name__})")
+        cleanup.report(f"session request errored ({type(exc).__name__})")
         print(f"Error: session request failed: {redact(str(exc), key)}", file=sys.stderr)
         sys.exit(1)
     if resp.status_code // 100 != 2:
-        _cleanup_and_report(client, key, document_id, "session minting failed")
+        cleanup.report("session minting failed")
         _fail_http("session", resp, key)
 
     jwt = _parse_jwt(resp, key)
     if not jwt:
-        _cleanup_and_report(client, key, document_id, "session returned no usable jwt")
+        cleanup.report("session returned no usable jwt")
         print(f"Error: session minted but no usable jwt in response: {redact(resp.text, key)}",
               file=sys.stderr)
         sys.exit(1)
@@ -394,7 +426,7 @@ def _mint_and_emit(client, key: str, args, document_id: str, perms, expires_in: 
         # The JWT file write failed AFTER a successful mint. Do NOT fall back to stdout — that would
         # leak the bearer token into the exact CI/transcript sink --jwt-out exists to avoid. Tear the
         # document down (which makes the un-saved token inert) and report without printing the token.
-        if do_delete(client, key, document_id):
+        if cleanup.delete_quiet():
             print(f"Error: could not write --jwt-out ({type(e).__name__}: {e}). The uploaded "
                   f"document {document_id} was deleted, so the un-saved session token is now inert.",
                   file=sys.stderr)
