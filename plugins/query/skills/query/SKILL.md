@@ -13,7 +13,7 @@ license: Proprietary
 ## Rules for agents (read first)
 
 - **For a specific term you can name, use bounded `grep -C "term" file | head` first** — it's leaner than ranked search.
-- **Use query when grep would FLOOD:** a common/ambiguous term over a corpus too large to scan (grep returns dozens of matches to sift). query ranks the best passages and returns a bounded top-k, so it keeps context small.
+- **Use query when grep would FLOOD, or when you have no reliable exact term:** a common/ambiguous term over a corpus too large to scan (grep returns dozens of matches to sift), OR you don't know the document's exact wording (grep may return zero hits, sending you into repeated synonym guessing). query ranks the best passages and returns a bounded top-k, so it keeps context small.
 - **Small `-k` (1-2)** for a single fact; **`--language <lang>`** for non-English so inflected/umlaut forms match (German `Antrag`<->`Anträge`).
 - Build an index (`--emit-index`) only for many queries over the same corpus.
 

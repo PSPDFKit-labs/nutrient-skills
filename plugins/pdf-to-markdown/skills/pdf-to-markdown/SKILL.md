@@ -9,7 +9,7 @@ license: Proprietary
 - **Parse once** to a file — never re-parse the same PDF to search again.
 - **Default search = bounded grep:** `grep -n -i -C2 "term" file | head`. Get context in one command, batch lookups, cap with `head`.
 - **Use the `query` skill only when grep would flood** — the discriminating term is common/ambiguous AND the corpus is too large to scan (many matches to sift). query returns a bounded, ranked top-k (small `-k`), keeping context small. Add `--language <lang>` for non-English.
-- **Tables -> `pdf-to-text`.** **Never read the source PDF as an image.**
+- **Tables where column alignment must survive -> `pdf-to-text`** (this skill preserves Markdown tables fine; prefer `pdf-to-text` only when whitespace/columnar alignment matters). **Don't read the source PDF as an image to get its text** (vision is the fallback only for scanned/image-only PDFs with no text layer).
 
 # PDF to Markdown
 

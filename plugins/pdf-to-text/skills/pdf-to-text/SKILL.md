@@ -9,7 +9,7 @@ license: Proprietary
 - Best for **tables, invoices, columnar/financial PDFs** — layout and cell values survive.
 - **Parse once**, then **default to bounded grep:** `grep -n -i -C2 "term" file | head`.
 - **Use the `query` skill only when grep would flood** — a common term over a corpus too large to scan; then small `-k`, and `--language <lang>` for non-English.
-- **Never read the source PDF as an image.**
+- **Don't read the source PDF as an image to get its *text*** — this extractor is faster and more accurate for extractable text. (For a scanned/image-only PDF with no text layer, a vision tool is the right fallback — see Troubleshooting.)
 
 # PDF to Text
 
