@@ -22,7 +22,6 @@ from lib.common import assert_local_file, handle_error, redact, resolve_extract_
 
 EXTRACT_URL = "https://api.nutrient.io/extraction/extract"
 EXTRACT_MODE_COST = {
-    "text": 7,
     "structure": 7.5,
     "understand": 15,
     "agentic": 24,
@@ -208,7 +207,7 @@ def _safe_write_json(out_path: Path, response: dict) -> None:
     Write a 0600 temp sibling, fsync, then os.replace onto the target — so a disk-full or
     interrupt after the billed call can't leave a partial file or destroy a prior good output.
     """
-    data = json.dumps(response, indent=2)
+    data = json.dumps(response, indent=2, ensure_ascii=False)
     # mkstemp creates a UNIQUE file with O_CREAT|O_EXCL at 0600 in the target dir — so a
     # pre-planted hard link can't be truncated (no O_TRUNC on an existing name) and concurrent
     # runs can't share a temp inode. Then fsync + atomic os.replace onto the final name.
@@ -251,7 +250,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--instructions", help="Optional extraction instructions.")
     parser.add_argument(
         "--mode",
-        choices=["text", "structure", "understand", "agentic"],
+        choices=["structure", "understand", "agentic"],
         default="understand",
         help="Parse mode used before field extraction (default: understand).",
     )

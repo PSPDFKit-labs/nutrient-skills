@@ -67,8 +67,9 @@ uv run scripts/extract.py --url https://example.com/form.pdf --schema fields.jso
   --out result.json --mode understand --store-run
 ```
 
-Cost: `extract` bills the chosen parse mode **plus a flat +6 credits/page** (text 7,
-structure 7.5, understand 15, agentic 24 cr/page). The script prints the server's authoritative
+Cost: `extract` bills the chosen parse mode **plus a flat +6 credits/page** (structure 7.5,
+understand 15, agentic 24 cr/page). Extract has no `text` mode — the cheapest path is `structure`.
+The script prints the server's authoritative
 usage after the call and gates high estimates behind `--yes`. See
 `references/extract-output-and-citations.md` for the response shape and citation structure.
 
