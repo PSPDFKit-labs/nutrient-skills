@@ -1,5 +1,16 @@
 # Changelog
 
+## nutrient-dws grounded-rag-ingestion 1.0.0
+
+Initial release of the grounded RAG ingestion skill in the `nutrient-dws` plugin.
+
+**New:**
+- `chunk.py` doer script: transforms `/extraction/parse` spatial output into provenance-carrying JSONL — one chunk per logical element, each with element type, page index, bounding box, confidence, and reading order
+- Reuses `document-extraction-api`'s `create_client()` + `client.parse()` rather than re-implementing the API call; runs its own preflight credit-cost gate
+- Collision-safe `chunk_id` scheme: content-anchored `doc_id` (never the basename) plus `_e` inter-element and `_tr`/`_kv`/`_w` intra-element discriminators
+- Three chunking strategies (element, reading-order-window, table-row), table span-expansion, key-value region mapping, and `--min-confidence` filtering
+- `references/provenance-chunk-schema.md`, an illustrative embedding example, and a generated test fixture
+
 ## make-pdf 1.0.1 / remediate-pdf 1.0.1
 
 Repackaged both skills as standalone plugins so the install id matches the skill.

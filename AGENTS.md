@@ -8,6 +8,7 @@ Each skill lives under `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`. Rea
 
 - **nutrient-dws / document-processor-api** — Convert, transform, redact, sign, watermark, OCR, and secure documents via the Nutrient DWS Processor API (Python scripts via `uv`).
 - **nutrient-dws / document-extraction-api** — Parse documents into a structural model (typed elements with bounds) or whole-document Markdown via the Nutrient DWS Data Extraction API (`/extraction/parse`). Use for RAG ingestion, layout analysis, and form/invoice extraction.
+- **nutrient-dws / grounded-rag-ingestion** — Chunk a document into provenance-carrying JSONL ready for embedding. Each chunk carries element type, page index, bounding box, confidence, and reading order. Use for grounded RAG, cited retrieval, or confidence-aware ingestion pipelines.
 - **make-pdf / make-pdf** — Generate PDFs from Markdown or HTML via DWS, single files or whole directories, with accessible PDF/UA, archival PDF/A, and watermark outputs plus built-in conformance verification (structural checks, optional veraPDF audit).
 - **remediate-pdf / remediate-pdf** — Remediate existing PDFs: auto-tag with PDF/UA semantic structure (headings, lists, tables, reading order) via the Nutrient DWS Accessibility API (Python script via `uv`; auto-tag only — verify tagged output with the bundled `verify-pdf.py`).
 - **pdf-to-markdown / pdf-to-markdown** — Extract text from PDFs as structured, semantic Markdown. Use when converting a PDF to Markdown, extracting text from a PDF, or processing one or more PDFs into Markdown output.
