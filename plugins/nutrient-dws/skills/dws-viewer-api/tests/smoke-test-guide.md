@@ -62,7 +62,7 @@ uv run scripts/viewer-session.py upload-and-session --file tests/fixtures/sample
 Expect both `document_id=<id>` (stdout) and `jwt_written=/tmp/viewer.jwt`. Record the `document_id`
 for teardown. Verify and discard the JWT as in step 3.
 
-## 5. App-provided mode (no document created — preferred for routine smoke)
+## 5. App-provided mode (no document created — verifies the scope/TTL warnings only; not the recommended default)
 
 ```bash
 uv run scripts/viewer-session.py session --app-provided --jwt-out /tmp/viewer.jwt

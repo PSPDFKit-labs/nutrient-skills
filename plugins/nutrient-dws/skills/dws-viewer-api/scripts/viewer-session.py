@@ -296,7 +296,15 @@ def emit_jwt(jwt: str, jwt_out: str | None, print_jwt: bool = False) -> None:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             os.fchmod(f.fileno(), 0o600)
             f.write(jwt)
-        print(f"jwt_written={jwt_out}")
+        # The bearer token is now durably written at 0600 — the `with` block flushed and closed it.
+        # This confirmation print is NOT part of the write, so a BrokenPipeError here (a closed stdout
+        # consumer under unbuffered/line-buffered output — common in the agent/CI runtimes this skill
+        # targets) must NOT escape as an OSError: _mint_and_emit's `except OSError` would misread it as
+        # a write failure and DELETE the document behind the intact file, destroying a saved session.
+        try:
+            print(f"jwt_written={jwt_out}")
+        except OSError:
+            pass
     elif print_jwt:
         # Explicit opt-in only. stdout is captured in CI logs and agent transcripts, so printing
         # a browser bearer token is off by default (see require_jwt_sink) — prefer --jwt-out.

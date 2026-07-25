@@ -593,5 +593,64 @@ def test_upload_and_session_happy_path_pins_wire_contract(tmp_path, capsys):
     assert isinstance(exp, int) and 0 < exp - int(time.time()) <= vs.MAX_EXPIRES_IN, "exp not bounded"
 
 
+def test_broken_pipe_on_jwt_written_print_does_not_delete(tmp_path, monkeypatch):
+    # Review finding #1: emit_jwt writes+closes the 0600 file, THEN prints `jwt_written=`. A
+    # BrokenPipeError on that confirmation (closed stdout under unbuffered/line-buffered output —
+    # common in agent/CI) must NOT be misread by _mint_and_emit's `except OSError` as a write
+    # failure: the token is already persisted, so tearing the document down would destroy a valid
+    # session and falsely report it inert. The run must succeed with the token saved and NO delete.
+    import io
+    dest = tmp_path / "jwt.txt"
+    f = tmp_path / "doc.pdf"; f.write_bytes(b"%PDF-1.4")
+    handler, calls = _upload_then_session(httpx.Response(201, json={"jwt": "a.b.c"}))
+
+    class _BrokenStdout(io.StringIO):
+        def write(self, s):  # the closed pipe surfaces on the post-write confirmation print
+            if "jwt_written=" in s:
+                raise BrokenPipeError("stdout closed")
+            return super().write(s)
+
+    monkeypatch.setattr(sys, "stdout", _BrokenStdout())
+    with _client(handler) as c:
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), jwt_out=str(dest)))
+    assert dest.read_text() == "a.b.c", "the JWT must stay persisted despite the broken confirmation pipe"
+    deletes = [x for x in calls if x[0] == "DELETE"]
+    assert deletes == [], f"a broken confirmation-print pipe must not delete the saved session; got {deletes}"
+
+
+def test_genuine_jwt_out_write_failure_tears_down_and_never_leaks(tmp_path, monkeypatch, capsys):
+    # Review finding #1 (companion): a GENUINE emit failure (the write itself raising OSError) AFTER
+    # a successful mint must still tear the document down, report the token inert, exit 1, and never
+    # print the JWT. This is the legitimate OSError path the confirmation-print guard preserves.
+    f = tmp_path / "doc.pdf"; f.write_bytes(b"%PDF-1.4")
+    handler, calls = _upload_then_session(httpx.Response(201, json={"jwt": "SECRETJWT"}))
+
+    def boom(*_a, **_k):
+        raise OSError("disk full")
+    monkeypatch.setattr(vs, "emit_jwt", boom)
+
+    with _client(handler) as c, pytest.raises(SystemExit) as e:
+        vs.cmd_upload_and_session(c, "KEY", _Args(file=str(f), jwt_out=str(tmp_path / "jwt.txt")))
+    assert e.value.code == 1
+    out = capsys.readouterr()
+    assert ("DELETE", "/viewer/documents/DOC1") in calls, "a real write failure must tear down the document"
+    assert "inert" in out.err
+    assert "SECRETJWT" not in out.out and "SECRETJWT" not in out.err, "the JWT must never leak on write failure"
+
+
+def test_do_delete_transport_exception_is_best_effort_and_redacts(capsys):
+    # Review finding #3: do_delete's own DELETE call raising (network blip) must be caught — return
+    # False, warn with the key redacted, and never leak the raw key. Prior tests only cover a non-2xx
+    # DELETE *response*, never a raised exception.
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("upstream refused token=SECRETKEY")
+
+    with _client(handler) as c:
+        assert vs.do_delete(c, "SECRETKEY", "DOC1") is False
+    err = capsys.readouterr().err
+    assert "SECRETKEY" not in err, "the API key must never appear in the cleanup warning"
+    assert "[REDACTED]" in err, "the key must be redacted from the exception text"
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([str(Path(__file__)), "-q"]))

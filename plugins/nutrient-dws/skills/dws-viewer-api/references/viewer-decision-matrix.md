@@ -1,8 +1,10 @@
 # DWS Viewer API — product decision matrix & routing
 
 This is the **single source of truth** for disambiguating the three Nutrient products that show
-documents in a browser. The SKILL.md inline summary, the `AGENTS.md` bullet, and the `README.md`
-row are one-line pointers to this file — when positioning shifts, change it here.
+documents in a browser. SKILL.md carries a short inline routing table so an agent can disambiguate
+without opening a second file; the `AGENTS.md` bullet and the `README.md` row are one-line pointers.
+This file is the fuller, authoritative version — when positioning shifts, change it here first, then
+reconcile SKILL.md's summary table to match.
 
 ## The three products
 
