@@ -1,5 +1,17 @@
 # Changelog
 
+## nutrient-dws dws-viewer-api 1.0.0
+
+Initial release of the DWS Viewer API skill in the `nutrient-dws` plugin (hybrid doer + pointer).
+
+**New:**
+- `viewer-session.py` doer script: uploads a document to `POST /viewer/documents` and mints a browser viewer session JWT via `POST /viewer/sessions`, with `upload`, `session`, one-shot `upload-and-session`, and `delete` (teardown) subcommands plus an app-provided (`--app-provided`) mode
+- Dedicated `NUTRIENT_DWS_VIEWER_API_KEY` (separate product) with **no silent fallback** to the Processor key — a global DWS key requires an explicit `--allow-global-key` opt-in (avoids minting a browser JWT against the wrong product)
+- Least-privilege sessions: default `["read"]`; `write`/`download` require explicit `--allow-write`/`--allow-download`; `--expires-in` clamped to a 24h ceiling with a short-TTL warning; JWT printed once to stdout or written to a `0600` file (`--jwt-out`); API key redacted from error output
+- Best-effort cleanup of the uploaded document on every `upload-and-session` failure path (non-2xx, non-JSON 2xx, missing-jwt, or `--jwt-out` write failure), via the confirmed-live `DELETE /viewer/documents/{id}`; live teardown verified by document-list absence (GET-by-id is not a liveness signal)
+- `references/viewer-decision-matrix.md` (single source of truth for Viewer API vs Web SDK vs Document Engine routing + confirmed delete contract) and `references/embed-guide.md` (the `NutrientViewer.load({ session })` embed, CDN snippet, llms.txt links)
+- `tests/smoke-test-guide.md` for live verification, `tests/smoke_viewer.py` for keyless routing-collision/registration assertions (enforces the `nutrient-web-sdk` disambiguation), and 32 keyless/mocked unit tests
+
 ## nutrient-dws grounded-rag-ingestion 1.0.0
 
 Initial release of the grounded RAG ingestion skill in the `nutrient-dws` plugin.
