@@ -652,5 +652,20 @@ def test_do_delete_transport_exception_is_best_effort_and_redacts(capsys):
     assert "[REDACTED]" in err, "the key must be redacted from the exception text"
 
 
+def test_standalone_session_transport_error_is_redacted(capsys):
+    # #4 refactor: do_session is now the single mint path for BOTH callers. On the standalone
+    # `session` path (no on_error hook), a transport exception is reported with the key redacted and
+    # exits 1 — handled locally rather than bubbling raw to the top-level handler.
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connect failed token=SECRETKEY")
+
+    with _client(handler) as c, pytest.raises(SystemExit) as e:
+        vs.cmd_session(c, "SECRETKEY", _Args(document_id="DOC1", print_jwt=True))
+    assert e.value.code == 1
+    err = capsys.readouterr().err
+    assert "SECRETKEY" not in err, "the API key must never leak from a transport error"
+    assert "session request failed" in err
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([str(Path(__file__)), "-q"]))
