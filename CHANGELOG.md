@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Updated the PDF-to-Markdown and PDF-to-Text skills for the included DWS Free allowance, existing-account login, paid Vision access, API-key automation, and clear non-interactive failure handling.
+
 ## nutrient-dws dws-viewer-api 1.0.0
 
 Initial release of the DWS Viewer API skill in the `nutrient-dws` plugin (hybrid doer + pointer).

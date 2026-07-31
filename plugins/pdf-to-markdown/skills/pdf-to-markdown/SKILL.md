@@ -54,6 +54,22 @@ $SKILL_DIR/bin/pdf-to-markdown --enable-image-export INPUT.pdf OUTPUT.md
 
 Images are saved to `{output}_resources/` alongside the output file and referenced as standard Markdown image links. This is useful when feeding output to LLMs that support vision, or when image context improves downstream accuracy. Off by default because it increases processing time for image-heavy documents.
 
+### Vision for scanned or visually complex PDFs
+
+Vision handles scanned documents, handwriting, formulas, and visually complex tables:
+
+```bash
+$SKILL_DIR/bin/pdf-to-markdown --vision INPUT.pdf OUTPUT.md
+```
+
+Vision requires a paid Nutrient PDF to Markdown plan. If the command says login is required, surface that message to the user and ask them to run:
+
+```bash
+$SKILL_DIR/bin/nutrient auth login
+```
+
+Do not retry `--vision` without authentication. In non-interactive environments, the user can provide `NUTRIENT_API_KEY`; never ask them to paste the secret into chat or place it directly in a command argument.
+
 ## Workflow
 
 1. **Choose mode**: Use batch directory mode for 2+ files, single file mode otherwise.
@@ -64,17 +80,12 @@ Images are saved to `{output}_resources/` alongside the output file and referenc
 
 ## Troubleshooting
 
-- **Empty or minimal output**: The PDF may be scanned/image-only and contains no extractable text.
+- **Empty or minimal output**: The PDF may be scanned/image-only. Offer `--vision`; if login is required, surface the CLI's instructions rather than retrying.
 - **Non-zero exit code**: Read stderr for the specific error. Common causes: corrupted PDF, unsupported encryption, or network issues during first-run binary download.
 - **First run is slow**: The wrapper downloads the platform binary on first use (~a few seconds). Subsequent runs use the cached binary.
 
 ## License
 
-Free for processing up to 1,000 documents per calendar month.
+Start without signing up; the CLI automatically uses the included Free allowance of 1,000 credits each month. Sign in to use an existing Nutrient account or a paid plan. Successful standard conversions use 1 credit, successful Vision conversions use 2, and failed conversions use no credits. Vision is included on paid plans. Existing `--license-key` use remains supported.
 
-Commercial license required for:
-- processing over 1,000 documents/month
-- redistributing the binary
-- OEM/white-label use
-
-Contact `sales@nutrient.io` for commercial licensing.
+Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient. See [current pricing](https://www.nutrient.io/api/pricing/#api-pricing-pdf-to-markdown).
