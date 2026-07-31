@@ -245,13 +245,31 @@ class _CleanupOnce:
         return self._delete_once()
 
 
-def do_session(client, key: str, body: dict) -> str:
-    """Mint a session JWT. Return the JWT string. [SDK-SWAP]"""
-    resp = client.post(SESSIONS_URL, headers=_auth_headers(key), json=body)
+def do_session(client, key: str, body: dict, on_error=None) -> str:
+    """Mint a session JWT. Return the JWT string. [SDK-SWAP]
+
+    Single source of truth for the mint sequence (POST -> status check -> jwt parse) used by both
+    the standalone `session` path and `upload-and-session`. `on_error`, when given, is called with a
+    short context string immediately before EACH failure exit — a transport exception before any
+    response, a non-2xx status, or a 2xx body with no usable jwt. upload-and-session passes
+    `cleanup.report` so the uploaded document is torn down before the process exits; the standalone
+    path passes nothing (there is no uploaded document to clean up).
+    """
+    try:
+        resp = client.post(SESSIONS_URL, headers=_auth_headers(key), json=body)
+    except Exception as exc:  # noqa: BLE001 — the session call never returned (timeout, DNS/TLS)
+        if on_error:
+            on_error(f"session request errored ({type(exc).__name__})")
+        print(f"Error: session request failed: {redact(str(exc), key)}", file=sys.stderr)
+        sys.exit(1)
     if resp.status_code // 100 != 2:
+        if on_error:
+            on_error("session minting failed")
         _fail_http("session", resp, key)
     jwt = _parse_jwt(resp, key)
     if not jwt:
+        if on_error:
+            on_error("session returned no usable jwt")
         print(f"Error: session minted but no usable jwt in response: {redact(resp.text, key)}",
               file=sys.stderr)
         sys.exit(1)
@@ -407,26 +425,11 @@ def _mint_and_emit(client, key: str, args, document_id: str, perms, expires_in: 
     cleanup guard so any failure tears down the uploaded document."""
     print(f"document_id={document_id}")
 
-    # Every non-success exit of the post-upload session call must tear down the uploaded document
-    # (R-16) — a transport error before any response (timeout, DNS/TLS), a non-2xx status, a 2xx
-    # with a non-JSON body, or a 2xx missing the jwt key.
+    # Mint via the shared do_session (single source of truth). Its on_error hook tears the uploaded
+    # document down (R-16) before ANY failure exit — transport error before a response, a non-2xx
+    # status, a 2xx non-JSON/non-object body, or a 2xx missing the jwt key.
     body = build_session_body(document_id, perms, expires_in)
-    try:
-        resp = client.post(SESSIONS_URL, headers=_auth_headers(key), json=body)
-    except Exception as exc:  # noqa: BLE001 — the session call never returned; the upload is orphaned
-        cleanup.report(f"session request errored ({type(exc).__name__})")
-        print(f"Error: session request failed: {redact(str(exc), key)}", file=sys.stderr)
-        sys.exit(1)
-    if resp.status_code // 100 != 2:
-        cleanup.report("session minting failed")
-        _fail_http("session", resp, key)
-
-    jwt = _parse_jwt(resp, key)
-    if not jwt:
-        cleanup.report("session returned no usable jwt")
-        print(f"Error: session minted but no usable jwt in response: {redact(resp.text, key)}",
-              file=sys.stderr)
-        sys.exit(1)
+    jwt = do_session(client, key, body, on_error=cleanup.report)
 
     try:
         emit_jwt(jwt, args.jwt_out, args.print_jwt)
