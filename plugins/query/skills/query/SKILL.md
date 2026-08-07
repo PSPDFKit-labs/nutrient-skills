@@ -95,10 +95,10 @@ The index is a self-describing file (it carries the document's lines), so `$SKIL
 
 ## License
 
-Free for processing up to 1,000 documents per calendar month. Each `query` call is one processing event and counts as one document against that quota — the same as a `pdf-to-markdown` / `pdf-to-text` conversion. The "parse once, query many" guidance saves your agent's context tokens and re-parse time, not the document quota (and an `--emit-index` rebuild saved is time/CPU, not quota).
+`query` searches an existing local extraction and uses no credits. Standard `pdf-to-markdown` and `pdf-to-text` conversions use the same credit pool: 1,000 one-time credits on a supported host without signup, then monthly credits after account creation. Containers and CI require sign-in or `NUTRIENT_API_KEY` for conversion.
 
 Commercial license required for:
-- processing over 1,000 documents/month
+- conversion beyond the included or account-plan allowance
 - redistributing the binary
 - OEM/white-label use
 

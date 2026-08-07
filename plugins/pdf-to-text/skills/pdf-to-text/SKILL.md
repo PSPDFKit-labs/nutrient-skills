@@ -28,7 +28,7 @@ Convert PDFs into layout-preserving plain text. Each word is placed on a charact
 
 Before running any commands, set `SKILL_DIR` to the absolute path of the directory containing this SKILL.md file. Use `$SKILL_DIR/bin/pdf-to-text` in all commands below.
 
-The `$SKILL_DIR/bin/pdf-to-text` wrapper automatically installs the platform-specific binary into `~/.local/share/nutrient/cli/` from the CDN. It caches the binary and only checks for updates every 6 hours, so subsequent runs are fast. The same binary backs `pdf-to-markdown`, `pdf-to-text`, and `self-update`, so installing either skill gets you the same `~/.local/share/nutrient/cli/` install.
+The `$SKILL_DIR/bin/pdf-to-text` wrapper automatically installs the platform-specific binary into `~/.local/share/nutrient/cli/` from the CDN. It caches the binary and only checks for updates every 6 hours, so subsequent runs are fast. The same binary backs conversion, search, authentication, and updates, so installing either skill gets you the same `~/.local/share/nutrient/cli/` install.
 
 ### Single file
 
@@ -46,6 +46,24 @@ For multiple files, pass directories instead of individual files. The converter 
 $SKILL_DIR/bin/pdf-to-text INPUT_DIR/ OUTPUT_DIR/
 ```
 
+### Vision for scanned or visually complex PDFs
+
+Vision can produce a structured local result for scanned documents, handwriting, formulas, and visually complex tables:
+
+```bash
+$SKILL_DIR/bin/pdf-to-text --vision INPUT.pdf OUTPUT.json
+```
+
+Vision requires a paid Nutrient PDF to Markdown plan. If the command says login is required, surface that message to the user and ask them to run:
+
+```bash
+$SKILL_DIR/bin/nutrient auth login
+```
+
+Do not retry `--vision` without authentication. In non-interactive environments, the user can provide `NUTRIENT_API_KEY`; never ask them to paste the secret into chat or place it directly in a command argument.
+
+Containers and CI do not receive automatic included credits. In those environments, ask the user to run the bundled `nutrient auth login` command or configure `NUTRIENT_API_KEY`.
+
 ## Workflow
 
 1. **Choose mode**: Use batch directory mode for 2+ files, single file mode otherwise.
@@ -56,18 +74,14 @@ $SKILL_DIR/bin/pdf-to-text INPUT_DIR/ OUTPUT_DIR/
 
 ## Troubleshooting
 
-- **Empty or minimal output**: The PDF is most likely scanned/image-only and contains no extractable text. This skill does not OCR; use a vision-capable tool first.
+- **Empty or minimal output**: The PDF is most likely scanned/image-only. Offer `--vision`; if login is required, surface the CLI's instructions rather than retrying.
 - **Non-zero exit code**: Read stderr for the specific error. Common causes: corrupted PDF, unsupported encryption, or network issues during first-run binary download.
+- **Included credits used**: Stop retrying and ask the user to run `$SKILL_DIR/bin/nutrient auth login`. Never suggest signing out, deleting CLI state, or reinstalling to obtain more credits.
 - **First run is slow**: The wrapper downloads the platform binary on first use (~a few seconds). Subsequent runs use the cached binary.
 - **Columns look wrong**: The extractor mirrors spatial layout exactly, so unusual PDF page geometry (e.g. rotated pages, two-column reflows) can produce surprising alignment. Try `pdf-to-markdown` if the document has a regular structure the markdown exporter can recognize.
 
 ## License
 
-Free for processing up to 1,000 documents per calendar month.
+On a supported host, the first standard conversion starts 1,000 one-time credits without signup. They do not expire or renew. Creating an account preserves that workspace and its remaining credits. Signing in to an existing account leaves the earlier balance and history separate. Account plans provide monthly credits. Successful standard conversions use 1 credit, successful Vision conversions use 2, and failed conversions use no credits. Vision is included on paid plans. Existing `--license-key` use remains supported.
 
-Commercial license required for:
-- processing over 1,000 documents/month
-- redistributing the binary
-- OEM/white-label use
-
-Contact `sales@nutrient.io` for commercial licensing.
+Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient. See [current pricing](https://www.nutrient.io/api/pricing/#api-pricing-pdf-to-markdown).
