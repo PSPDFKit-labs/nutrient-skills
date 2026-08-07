@@ -70,6 +70,8 @@ $SKILL_DIR/bin/nutrient auth login
 
 Do not retry `--vision` without authentication. In non-interactive environments, the user can provide `NUTRIENT_API_KEY`; never ask them to paste the secret into chat or place it directly in a command argument.
 
+Containers and CI do not receive automatic included credits. In those environments, ask the user to run the bundled `nutrient auth login` command or configure `NUTRIENT_API_KEY`.
+
 ## Workflow
 
 1. **Choose mode**: Use batch directory mode for 2+ files, single file mode otherwise.
@@ -82,10 +84,11 @@ Do not retry `--vision` without authentication. In non-interactive environments,
 
 - **Empty or minimal output**: The PDF may be scanned/image-only. Offer `--vision`; if login is required, surface the CLI's instructions rather than retrying.
 - **Non-zero exit code**: Read stderr for the specific error. Common causes: corrupted PDF, unsupported encryption, or network issues during first-run binary download.
+- **Included credits used**: Stop retrying and ask the user to run `$SKILL_DIR/bin/nutrient auth login`. Never suggest signing out, deleting CLI state, or reinstalling to obtain more credits.
 - **First run is slow**: The wrapper downloads the platform binary on first use (~a few seconds). Subsequent runs use the cached binary.
 
 ## License
 
-Start without signing up; the CLI automatically uses the included Free allowance of 1,000 credits each month. Sign in to use an existing Nutrient account or a paid plan. Successful standard conversions use 1 credit, successful Vision conversions use 2, and failed conversions use no credits. Vision is included on paid plans. Existing `--license-key` use remains supported.
+On a supported host, the first standard conversion starts 1,000 one-time credits without signup. They do not expire or renew. Creating an account preserves that workspace and its remaining credits. Signing in to an existing account leaves the earlier balance and history separate. Account plans provide monthly credits. Successful standard conversions use 1 credit, successful Vision conversions use 2, and failed conversions use no credits. Vision is included on paid plans. Existing `--license-key` use remains supported.
 
 Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient. See [current pricing](https://www.nutrient.io/api/pricing/#api-pricing-pdf-to-markdown).
