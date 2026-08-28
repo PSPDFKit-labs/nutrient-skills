@@ -1,5 +1,14 @@
 # Changelog
 
+## nutrient-dws-mcp 0.1.0
+
+Initial release of the Codex-focused Nutrient DWS MCP plugin.
+
+- Bundles the pinned `@nutrient-sdk/dws-mcp-server` over local stdio
+- Uses MCP tools exclusively; no CLI, direct REST, or Python helper fallback
+- Includes a focused tool-routing skill with browser OAuth and file-safety guidance
+- Adds a Codex repo-marketplace entry for local installation and review
+
 ## nutrient-dws dws-viewer-api 1.0.0
 
 Initial release of the DWS Viewer API skill in the `nutrient-dws` plugin (hybrid doer + pointer).

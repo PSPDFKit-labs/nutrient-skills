@@ -1,0 +1,31 @@
+{
+  "name": "nutrient-dws-mcp",
+  "version": "0.1.0",
+  "description": "Process, sign, redact, parse, and extract documents through the Nutrient DWS MCP server.",
+  "author": {
+    "name": "Nutrient",
+    "email": "support@nutrient.io",
+    "url": "https://www.nutrient.io"
+  },
+  "homepage": "https://www.nutrient.io/mcp/",
+  "repository": "https://github.com/PSPDFKit-labs/nutrient-skills",
+  "license": "MIT",
+  "keywords": ["nutrient", "dws", "mcp", "pdf", "ocr", "redaction", "signing", "extraction"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Nutrient DWS MCP",
+    "shortDescription": "Process documents with Nutrient DWS",
+    "longDescription": "Convert, OCR, sign, redact, parse, and extract data from documents with the bundled Nutrient DWS MCP server.",
+    "developerName": "Nutrient",
+    "category": "Document Processing",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://www.nutrient.io/mcp/",
+    "privacyPolicyURL": "https://www.nutrient.io/legal/privacy",
+    "defaultPrompt": [
+      "Convert this document to PDF.",
+      "OCR this scanned document and save a searchable PDF.",
+      "Extract the key fields from this document with citations."
+    ]
+  }
+}

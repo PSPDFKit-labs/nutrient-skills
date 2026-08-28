@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "nutrient-dws": {
+      "command": "node",
+      "args": ["./scripts/launch-mcp.mjs"],
+      "cwd": "."
+    }
+  }
+}
