@@ -7,7 +7,7 @@ STATE_FILE="${STATE_DIR}/pdf-to-markdown-state"
 CHECK_INTERVAL_SECONDS=21600
 LATEST_URL="https://agent-cdn.nutrient.io/pdf-to-markdown/LATEST"
 CDN_PREFIX="https://agent-cdn.nutrient.io/pdf-to-markdown"
-MIN_ACCOUNT_CLI_VERSION="1.4.0"
+MIN_ACCOUNT_CLI_VERSION="1.4.1"
 
 VERB_NAME="${NUTRIENT_WRAPPER_VERB:-pdf-to-markdown}"
 case "$VERB_NAME" in
@@ -256,15 +256,17 @@ compute_sha256() {
 
   if command -v sha256sum >/dev/null 2>&1; then
     checksum_output="$(sha256sum "$checksum_file" 2>/dev/null)" || return 1
+    checksum_hash="$(printf '%s\n' "$checksum_output" | awk '{ print $1 }')"
   elif command -v shasum >/dev/null 2>&1; then
     checksum_output="$(shasum -a 256 "$checksum_file" 2>/dev/null)" || return 1
+    checksum_hash="$(printf '%s\n' "$checksum_output" | awk '{ print $1 }')"
   elif command -v openssl >/dev/null 2>&1; then
     checksum_output="$(openssl dgst -sha256 "$checksum_file" 2>/dev/null)" || return 1
+    checksum_hash="$(printf '%s\n' "$checksum_output" | awk '{ print $NF }')"
   else
     return 2
   fi
 
-  checksum_hash="$(printf '%s\n' "$checksum_output" | awk '{ print $NF }')"
   case "$checksum_hash" in
     *[!A-Fa-f0-9]*|'') return 1 ;;
   esac
