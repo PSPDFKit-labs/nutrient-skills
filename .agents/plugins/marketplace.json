@@ -35,6 +35,18 @@
         "path": "./plugins/nutrient-sdk-dev"
       },
       "category": "Development"
+    },
+    {
+      "name": "nutrient-dws-mcp",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nutrient-dws-mcp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Document Processing"
     }
   ]
 }

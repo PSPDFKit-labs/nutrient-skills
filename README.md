@@ -17,6 +17,7 @@ Method and full tables: [pdf-to-markdown benchmarks](https://github.com/PSPDFKit
 
 | Plugin | Skill | Description |
 |--------|-------|-------------|
+| [`nutrient-dws-mcp`](plugins/nutrient-dws-mcp) | `nutrient-dws-mcp` | MCP-only Codex plugin for converting, OCRing, signing, redacting, parsing, and extracting documents with browser OAuth |
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-processor-api` | Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents via the Nutrient Document Web Services API |
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-extraction-api` | Parse documents into a structural model or Markdown via the Nutrient Data Extraction API |
 | [`nutrient-dws`](plugins/nutrient-dws) | `grounded-rag-ingestion` | Chunk documents into provenance-carrying JSONL (element type, page, bbox, confidence, reading order) for grounded, auditable RAG pipelines |
@@ -73,6 +74,17 @@ Both Claude Code and Codex support the `/plugin` command:
 
 After installation, the plugin's skills will automatically load in all future sessions.
 
+### Codex MCP plugin
+
+The `nutrient-dws-mcp` plugin bundles the local Nutrient DWS MCP server and an MCP-only skill. Add this repository as a Codex marketplace and install the plugin:
+
+```bash
+codex plugin marketplace add pspdfkit-labs/nutrient-skills
+codex plugin add nutrient-dws-mcp@nutrient-skills
+```
+
+The plugin installs a pinned MCP package into a user cache on first use, then starts its stdio server directly to avoid `npx` shim handshake issues. It does not invoke the standalone DWS CLI. The first API-backed tool call opens browser OAuth, and later calls reuse the cached Nutrient session.
+
 ### Pi
 
 You can install the Nutrient skills with:
@@ -115,6 +127,7 @@ plugins/
       plugin.json                   Plugin manifest (Claude Code)
     .codex-plugin/
       plugin.json                   Plugin manifest (Codex)
+    .mcp.json                       Optional bundled MCP server configuration
     skills/
       <skill-name>/                 One or more skills per plugin
         SKILL.md                    Skill definition

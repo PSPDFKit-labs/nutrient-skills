@@ -1,0 +1,13 @@
+interface:
+  display_name: "Nutrient DWS MCP"
+  short_description: "Process documents through Nutrient DWS MCP"
+  default_prompt: "Use $nutrient-dws-mcp to process this document with the appropriate Nutrient DWS tool."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "nutrient-dws"
+      description: "Nutrient DWS document processing and extraction tools"
+
+policy:
+  allow_implicit_invocation: true

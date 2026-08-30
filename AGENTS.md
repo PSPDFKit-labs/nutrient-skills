@@ -6,6 +6,7 @@ Each skill lives under `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`. Rea
 
 ## Available Skills
 
+- **nutrient-dws-mcp / nutrient-dws-mcp** — Convert, OCR, sign, redact, parse, and extract documents using only the bundled Nutrient DWS MCP tools. This Codex-focused plugin uses browser OAuth and does not invoke the DWS CLI or direct-API helper scripts.
 - **nutrient-dws / document-processor-api** — Convert, transform, redact, sign, watermark, OCR, and secure documents via the Nutrient DWS Processor API (Python scripts via `uv`).
 - **nutrient-dws / document-extraction-api** — Parse documents into a structural model (typed elements with bounds) or whole-document Markdown via the Nutrient DWS Data Extraction API (`/extraction/parse`). Use for RAG ingestion, layout analysis, and form/invoice extraction.
 - **nutrient-dws / grounded-rag-ingestion** — Chunk a document into provenance-carrying JSONL ready for embedding. Each chunk carries element type, page index, bounding box, confidence, and reading order. Use for grounded RAG, cited retrieval, or confidence-aware ingestion pipelines.
