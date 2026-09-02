@@ -8,6 +8,9 @@ CHECK_INTERVAL_SECONDS=21600
 LATEST_URL="https://agent-cdn.nutrient.io/pdf-to-markdown/LATEST"
 CDN_PREFIX="https://agent-cdn.nutrient.io/pdf-to-markdown"
 
+FORCE_FRESHNESS_CHECK=0
+
+# BEGIN SHARED INSTALL WRAPPER
 case "$(uname -s)/$(uname -m)" in
   Linux/aarch64)
     TARGET_ID="linux-arm64"
@@ -476,6 +479,12 @@ refresh_if_needed() {
   esac
   load_state
 
+  # Account commands require a current binary, so their launcher always checks
+  # the release channel before deciding whether the cached binary is usable.
+  if [ "$FORCE_FRESHNESS_CHECK" -eq 1 ]; then
+    LAST_CHECKED_AT=""
+  fi
+
   if have_installed_binary; then
     INSTALL_READY=1
   fi
@@ -551,6 +560,7 @@ if ! selected_binary_exists "$NUTRIENT_CLI"; then
   echo "Binary not found or install is incomplete: $NUTRIENT_CLI" >&2
   exit 1
 fi
+# END SHARED INSTALL WRAPPER
 
 # nutrient 1.1.0+ is multi-call: it reads its verb from argv[0]'s basename
 # (pdf-to-markdown / pdf-to-text / query / self-update). Pin the verb explicitly

@@ -93,7 +93,7 @@ Standard can continue when Nutrient is unavailable. After Vision connects, it ca
 
 - **Empty or minimal output:** The PDF may be scanned or image-only. Offer Vision.
 - **Vision asks for sign-in:** Show the CLI message and ask the user to run `$SKILL_DIR/bin/nutrient auth login`. Do not retry first.
-- **No Vision pages remain:** Show the CLI message and the [pricing page](https://www.nutrient.io/api/pricing/#api-pricing-pdf-to-markdown). Do not retry or change account state.
+- **No Vision pages remain:** Show the CLI message and the [pricing page](https://www.nutrient.io/api/pricing/pdf-to-markdown/). Do not retry or change account state.
 - **Credential error during Standard conversion:** An explicitly configured key or saved sign-in is invalid. Show the error. Do not remove or replace credentials unless the user asks.
 - **First run is slow:** The wrapper downloads the platform binary once. Later runs use the cached copy.
 - **Columns look wrong:** Try `pdf-to-markdown` if headings, lists, and tables matter more than exact spacing.
@@ -101,6 +101,6 @@ Standard can continue when Nutrient is unavailable. After Vision connects, it ca
 
 ## Plans and licensing
 
-Standard conversion is free. With an account or API key, Vision uses the account's monthly allowance. Existing SDK licenses keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/#api-pricing-pdf-to-markdown).
+Standard conversion is free. With an account or API key, Vision uses the account's monthly allowance. Existing SDK licenses keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
 
 Use is subject to Nutrient's [Terms](https://www.nutrient.io/legal/terms/) and [Privacy Policy](https://www.nutrient.io/legal/privacy-policy/). Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient.

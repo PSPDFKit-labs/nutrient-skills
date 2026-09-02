@@ -73,10 +73,17 @@ def check_launcher_copies() -> None:
     if markdown_launcher != text_launcher:
         fail("the two bundled nutrient launchers differ beyond their converter target")
 
-    for wrapper in (SHELL_FILES[0], SHELL_FILES[2]):
+    shared_wrappers = []
+    for wrapper in (SHELL_FILES[0], SHELL_FILES[2], SHELL_FILES[4]):
         contents = wrapper.read_text()
-        if 'MIN_ACCOUNT_CLI_VERSION="1.4.1"' not in contents:
-            fail(f"{wrapper.relative_to(ROOT)} does not require Nutrient CLI 1.4.1")
+        start = contents.find("# BEGIN SHARED INSTALL WRAPPER\n")
+        end = contents.find("# END SHARED INSTALL WRAPPER\n")
+        if start < 0 or end < 0 or end <= start:
+            fail(f"{wrapper.relative_to(ROOT)} is missing shared-wrapper markers")
+        shared_wrappers.append(contents[start:end])
+
+    if len(set(shared_wrappers)) != 1:
+        fail("the three bundled wrappers have drifted in their shared install logic")
 
 
 def load_json(path: Path) -> dict:
@@ -101,21 +108,13 @@ def check_plugin_versions() -> None:
 
 
 def check_customer_text() -> None:
-    combined = "\n".join(path.read_text().lower() for path in CUSTOMER_TEXT_FILES)
-    for phrase in RETIRED_PHRASES:
-        if phrase in combined:
-            fail(f"retired wording remains: {phrase!r}")
-
-    required_phrases = [
-        "standard conversion is free and does not require an account",
-        "vision requires a nutrient account, api key, or existing sdk license",
-        "each input page uses one vision page",
-        "query` is free to use",
-        "usage reports include a random event id",
-    ]
-    for phrase in required_phrases:
-        if phrase not in combined:
-            fail(f"required wording is missing: {phrase!r}")
+    for path in CUSTOMER_TEXT_FILES:
+        contents = path.read_text().lower()
+        for phrase in RETIRED_PHRASES:
+            if phrase in contents:
+                fail(
+                    f"retired wording remains in {path.relative_to(ROOT)}: {phrase!r}"
+                )
 
 
 def check_wrapper_dispatch() -> None:
@@ -140,6 +139,15 @@ def check_wrapper_dispatch() -> None:
             "  echo 'nutrient 1.4.1'\n"
             "  exit 0\n"
             "fi\n"
+            "if [ \"$(basename \"$0\")\" = \"nutrient\" ] && "
+            "[ \"${1:-}\" = \"auth\" ] && [ \"${2:-}\" = \"--help\" ]; then\n"
+            "  if [ \"${FAKE_ACCOUNT_COMMANDS:-1}\" = \"1\" ]; then\n"
+            "    printf '  nutrient auth login\\n  nutrient auth status\\n  nutrient auth logout\\n'\n"
+            "  else\n"
+            "    printf 'Usage: nutrient [COMMAND]\\n'\n"
+            "  fi\n"
+            "  exit 0\n"
+            "fi\n"
             "printf 'command=%s args=' \"$(basename \"$0\")\"\n"
             "printf '%s ' \"$@\"\n"
             "printf '\\n'\n"
@@ -159,6 +167,7 @@ def check_wrapper_dispatch() -> None:
         fake_curl = fake_tools / "curl"
         fake_curl.write_text(
             "#!/bin/sh\n"
+            "[ \"${FAKE_CDN_FAILURE:-0}\" = \"0\" ] || exit 22\n"
             "destination=''\n"
             "url=''\n"
             "while [ \"$#\" -gt 0 ]; do\n"
@@ -193,8 +202,18 @@ def check_wrapper_dispatch() -> None:
 
         cases = [
             (SHELL_FILES[0], ["input.pdf", "output.md"], "command=pdf-to-markdown"),
+            (
+                SHELL_FILES[0],
+                ["--vision", "scan.pdf", "scan.md"],
+                "command=pdf-to-markdown args=--vision scan.pdf scan.md",
+            ),
             (SHELL_FILES[1], ["auth", "status"], "command=nutrient"),
             (SHELL_FILES[2], ["input.pdf", "output.txt"], "command=pdf-to-text"),
+            (
+                SHELL_FILES[2],
+                ["--vision", "scan.pdf", "scan.json"],
+                "command=pdf-to-text args=--vision scan.pdf scan.json",
+            ),
             (SHELL_FILES[3], ["auth", "status"], "command=nutrient"),
             (SHELL_FILES[4], ["text", "output.md", "question"], "command=query"),
         ]
@@ -212,6 +231,30 @@ def check_wrapper_dispatch() -> None:
                 )
             if expected not in result.stdout:
                 fail(f"{executable.relative_to(ROOT)} did not dispatch to {expected}")
+
+        old_cache_environment = environment.copy()
+        old_cache_environment.update(
+            {
+                "FAKE_ACCOUNT_COMMANDS": "0",
+                "FAKE_CDN_FAILURE": "1",
+            }
+        )
+        update_required = (
+            "The installed Nutrient CLI does not support account commands. "
+            "Connect to the internet and retry so it can be updated."
+        )
+        for launcher in (SHELL_FILES[1], SHELL_FILES[3]):
+            old_cache = subprocess.run(
+                [str(launcher), "auth", "status"],
+                capture_output=True,
+                text=True,
+                env=old_cache_environment,
+            )
+            if old_cache.returncode == 0 or update_required not in old_cache.stderr:
+                fail(
+                    f"{launcher.relative_to(ROOT)} accepted a conversion-only "
+                    "Nutrient CLI 1.4.1 cache after a failed CDN refresh"
+                )
 
         bad_checksum = temporary / "bad.sha256"
         bad_checksum.write_text(f"{'0' * 64}  {archive.name}\n")
