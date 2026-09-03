@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -274,6 +275,172 @@ def check_wrapper_dispatch() -> None:
         )
         if rejected.returncode == 0 or "Checksum mismatch" not in rejected.stderr:
             fail("the wrapper did not reject an archive with the wrong checksum")
+
+        real_mkdir = shutil.which("mkdir")
+        real_mv = shutil.which("mv")
+        if not real_mkdir or not real_mv:
+            fail("the wrapper race test requires mkdir and mv")
+
+        race_home = temporary / "race-home"
+        race_tmp = temporary / "race-tmp"
+        race_home.mkdir()
+        race_tmp.mkdir()
+        race_environment = environment.copy()
+        race_environment.update(
+            {
+                "HOME": str(race_home),
+                "TMPDIR": str(race_tmp),
+            }
+        )
+
+        primed = subprocess.run(
+            [str(SHELL_FILES[0]), "input.pdf", "output.md"],
+            capture_output=True,
+            text=True,
+            env=race_environment,
+        )
+        if primed.returncode != 0:
+            fail(f"could not prime the wrapper race test: {primed.stderr.strip()}")
+
+        state_file = race_home / ".local/share/nutrient/pdf-to-markdown-state"
+        state_file.write_text(
+            "LAST_CHECKED_AT=0\n"
+            "RELEASE_ID=2026-08-28T000000Z\n"
+        )
+
+        race_tools = temporary / "race-bin"
+        race_tools.mkdir()
+        paused_marker = temporary / "race-paused"
+        waiting_marker = temporary / "race-waiting"
+        continue_marker = temporary / "race-continue"
+        install_dir = race_home / ".local/share/nutrient/cli"
+        lock_path = race_home / ".local/share/nutrient/.install-lock"
+
+        fake_mv = race_tools / "mv"
+        fake_mv.write_text(
+            "#!/bin/sh\n"
+            "if [ \"$#\" -eq 2 ] && [ \"$1\" = \"$FAKE_RACE_INSTALL_DIR\" ]; then\n"
+            "  case \"$2\" in\n"
+            "    \"$FAKE_RACE_INSTALL_DIR\".old.*)\n"
+            "      \"$FAKE_REAL_MV\" \"$@\" || exit $?\n"
+            "      : > \"$FAKE_RACE_PAUSED\"\n"
+            "      while [ ! -f \"$FAKE_RACE_CONTINUE\" ]; do sleep 0.05; done\n"
+            "      exit 0\n"
+            "      ;;\n"
+            "  esac\n"
+            "fi\n"
+            "exec \"$FAKE_REAL_MV\" \"$@\"\n"
+        )
+        fake_mv.chmod(0o755)
+
+        fake_mkdir = race_tools / "mkdir"
+        fake_mkdir.write_text(
+            "#!/bin/sh\n"
+            "if [ \"$#\" -eq 1 ] && [ \"$1\" = \"$FAKE_RACE_LOCK_PATH\" ] && "
+            "[ -f \"$FAKE_RACE_PAUSED\" ]; then\n"
+            "  : > \"$FAKE_RACE_WAITING\"\n"
+            "fi\n"
+            "exec \"$FAKE_REAL_MKDIR\" \"$@\"\n"
+        )
+        fake_mkdir.chmod(0o755)
+
+        race_environment.update(
+            {
+                "PATH": (
+                    f"{race_tools}{os.pathsep}{fake_tools}"
+                    f"{os.pathsep}{os.environ['PATH']}"
+                ),
+                "FAKE_RELEASE_ID": "2026-08-29T000000Z",
+                "FAKE_REAL_MKDIR": real_mkdir,
+                "FAKE_REAL_MV": real_mv,
+                "FAKE_RACE_INSTALL_DIR": str(install_dir),
+                "FAKE_RACE_LOCK_PATH": str(lock_path),
+                "FAKE_RACE_PAUSED": str(paused_marker),
+                "FAKE_RACE_WAITING": str(waiting_marker),
+                "FAKE_RACE_CONTINUE": str(continue_marker),
+            }
+        )
+
+        def wait_for_marker(marker: Path, processes: list[subprocess.Popen]) -> bool:
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                if marker.exists():
+                    return True
+                if any(process.poll() is not None for process in processes):
+                    return False
+                time.sleep(0.05)
+            return False
+
+        first = subprocess.Popen(
+            [str(SHELL_FILES[0]), "first.pdf", "first.md"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=race_environment,
+        )
+        second = None
+        race_problem = None
+        try:
+            if not wait_for_marker(paused_marker, [first]):
+                race_problem = "the first wrapper did not pause during the directory swap"
+            else:
+                second = subprocess.Popen(
+                    [str(SHELL_FILES[4]), "text", "output.md", "question"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    env=race_environment,
+                )
+                if not wait_for_marker(waiting_marker, [first, second]):
+                    race_problem = "the second wrapper did not wait for the install lock"
+                elif install_dir.exists():
+                    race_problem = (
+                        "the second wrapper recreated the live install directory "
+                        "while the first wrapper held the install lock"
+                    )
+        finally:
+            continue_marker.touch()
+
+        processes = [first] + ([second] if second else [])
+        results = []
+        try:
+            for process in processes:
+                results.append(process.communicate(timeout=30))
+        except subprocess.TimeoutExpired:
+            for process in processes:
+                process.kill()
+            for process in processes:
+                process.communicate()
+            fail("the concurrent wrapper race test timed out")
+
+        if race_problem:
+            details = "; ".join(
+                f"exit={process.returncode}, stderr={stderr.strip()!r}"
+                for process, (_, stderr) in zip(processes, results)
+            )
+            fail(f"{race_problem}; {details}")
+
+        expected_dispatches = ["command=pdf-to-markdown", "command=query"]
+        for process, (stdout, stderr), expected in zip(
+            processes, results, expected_dispatches
+        ):
+            if process.returncode != 0 or expected not in stdout:
+                fail(
+                    "a concurrent wrapper call failed during the install swap: "
+                    f"exit={process.returncode}, stdout={stdout.strip()!r}, "
+                    f"stderr={stderr.strip()!r}"
+                )
+
+        installed_binary = install_dir / binary_name
+        if not installed_binary.is_file() or not os.access(installed_binary, os.X_OK):
+            fail("the race test did not leave the Nutrient CLI at the top level")
+
+        nested_directories = [path for path in install_dir.iterdir() if path.is_dir()]
+        install_leftovers = list(install_dir.parent.glob("cli.new.*")) + list(
+            install_dir.parent.glob("cli.old.*")
+        )
+        if nested_directories or install_leftovers:
+            fail("the race test left nested or temporary install directories behind")
 
 
 def main() -> None:
