@@ -112,4 +112,4 @@ Standard can continue when Nutrient is unavailable. After Vision connects, it ca
 
 Standard conversion is free. With an account or API key, Vision uses the account's monthly allowance. Existing SDK licenses keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
 
-Use is subject to Nutrient's [Terms](https://www.nutrient.io/legal/terms/) and [Privacy Policy](https://www.nutrient.io/legal/privacy-policy/). Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient.
+Use is subject to the [Nutrient PDF to Markdown License](https://github.com/PSPDFKit/pdf-to-markdown/blob/main/LICENSE.md) and Nutrient's [Privacy Policy](https://www.nutrient.io/legal/privacy/). Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient.
