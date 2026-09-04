@@ -97,6 +97,10 @@ def check_plugin_versions() -> None:
     marketplace_versions = {
         plugin["name"]: plugin["version"] for plugin in marketplace["plugins"]
     }
+    codex_marketplace = load_json(ROOT / ".agents/plugins/marketplace.json")
+    codex_plugins = {
+        plugin["name"]: plugin["source"] for plugin in codex_marketplace["plugins"]
+    }
 
     for plugin, expected in PLUGIN_VERSIONS.items():
         for manifest_name in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
@@ -106,6 +110,13 @@ def check_plugin_versions() -> None:
 
         if marketplace_versions.get(plugin) != expected:
             fail(f"the marketplace version for {plugin} is not {expected}")
+
+        expected_source = {
+            "source": "local",
+            "path": f"./plugins/{plugin}",
+        }
+        if codex_plugins.get(plugin) != expected_source:
+            fail(f"the Codex marketplace does not expose {plugin}")
 
 
 def check_customer_text() -> None:
