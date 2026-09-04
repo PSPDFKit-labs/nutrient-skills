@@ -206,17 +206,25 @@ def check_wrapper_dispatch() -> None:
             )
         fake_binary.chmod(0o755)
 
-        def wrapper_command(executable: Path, *arguments: str) -> list[str]:
-            command = [str(executable), *arguments]
-            if system == "Windows":
-                command.insert(0, "sh")
-            return command
-
         def shell_path(path: Path) -> str:
-            # Git Bash accepts drive-letter paths with forward slashes. Native
-            # backslashes passed through environment variables would instead be
-            # treated as ordinary filename characters by the shell helpers.
-            return path.as_posix() if system == "Windows" else str(path)
+            if system != "Windows":
+                return str(path)
+            return subprocess.check_output(
+                ["cygpath", "-u", str(path)], text=True
+            ).strip()
+
+        def wrapper_command(executable: Path, *arguments: str) -> list[str]:
+            if system != "Windows":
+                return [str(executable), *arguments]
+            return [
+                "sh",
+                "-c",
+                'wrapper="$1"; shift; PATH="$FAKE_TOOLS:$PATH"; export PATH; '
+                'exec sh "$wrapper" "$@"',
+                "wrapper-test",
+                shell_path(executable),
+                *arguments,
+            ]
 
         archive = temporary / "release.tar.gz"
         with tarfile.open(archive, "w:gz") as bundle:
@@ -251,18 +259,21 @@ def check_wrapper_dispatch() -> None:
         fake_curl.chmod(0o755)
 
         environment = os.environ.copy()
+        wrapper_home = temporary / "home"
+        wrapper_tmp = temporary / "tmp"
+        wrapper_home.mkdir()
+        wrapper_tmp.mkdir()
         environment.update(
             {
-                "HOME": shell_path(temporary / "home"),
-                "TMPDIR": shell_path(temporary / "tmp"),
+                "HOME": shell_path(wrapper_home),
+                "TMPDIR": shell_path(wrapper_tmp),
                 "PATH": f"{fake_tools}{os.pathsep}{environment['PATH']}",
+                "FAKE_TOOLS": shell_path(fake_tools),
                 "FAKE_RELEASE_ID": "2026-08-28T000000Z",
                 "FAKE_ARCHIVE": shell_path(archive),
                 "FAKE_CHECKSUM": shell_path(checksum_file),
             }
         )
-        Path(environment["HOME"]).mkdir()
-        Path(environment["TMPDIR"]).mkdir()
 
         cases = [
             (SHELL_FILES[0], ["input.pdf", "output.md"], "command=pdf-to-markdown"),
@@ -322,14 +333,15 @@ def check_wrapper_dispatch() -> None:
 
         bad_checksum = temporary / "bad.sha256"
         bad_checksum.write_text(f"{'0' * 64}  {archive.name}\n")
+        rejected_home = temporary / "bad-home"
+        rejected_home.mkdir()
         rejected_environment = environment.copy()
         rejected_environment.update(
             {
-                "HOME": shell_path(temporary / "bad-home"),
+                "HOME": shell_path(rejected_home),
                 "FAKE_CHECKSUM": shell_path(bad_checksum),
             }
         )
-        Path(rejected_environment["HOME"]).mkdir()
         rejected = subprocess.run(
             wrapper_command(SHELL_FILES[0], "input.pdf", "output.md"),
             capture_output=True,
