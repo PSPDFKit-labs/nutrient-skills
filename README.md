@@ -13,7 +13,7 @@ These skills run the Nutrient CLI on your computer. Their performance results co
 
 Standard conversion is free and does not require an account, including in containers and CI. Vision requires a Nutrient account, API key, or Nutrient CLI license key. With an account or API key, each input page uses one Vision page from the account's monthly allowance. Nutrient CLI license keys keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
 
-The signed CLI runs on macOS with Apple Silicon, Linux, and Windows. The wrappers download it from Nutrient's CDN on first use. The CLI creates a one-way identifier for the installation. It never sends the system details used to create the identifier. The identifier cannot reveal those details or restore a lost sign-in.
+The signed CLI runs on macOS 13 or newer with Apple Silicon, Linux with glibc 2.38 or newer, and Windows. Linux also needs libcurl 4, ICU, and OpenSSL 3. The wrappers download the CLI from Nutrient's CDN on first use. The CLI creates a one-way identifier for the installation. It never sends the system details used to create the identifier. The identifier cannot reveal those details or restore a lost sign-in.
 
 Method and full tables: [PDF to Markdown benchmarks](https://github.com/PSPDFKit/pdf-to-markdown#benchmarks).
 
