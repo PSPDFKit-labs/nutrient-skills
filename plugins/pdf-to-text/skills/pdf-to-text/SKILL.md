@@ -55,7 +55,7 @@ Vision handles scans, photographs, handwriting, formulas, and complex layouts. W
 $SKILL_DIR/bin/pdf-to-text --vision INPUT.pdf OUTPUT.json
 ```
 
-Standard conversion is free and does not require an account. Vision requires a Nutrient account, API key, or existing SDK license. With an account or API key, each input page uses one Vision page from the account's monthly allowance. Existing SDK licenses keep their existing terms. Failed conversions do not use Vision pages.
+Standard conversion is free and does not require an account. Vision requires a Nutrient account, API key, or Nutrient CLI license key. With an account or API key, each input page uses one Vision page from the account's monthly allowance. Nutrient CLI license keys keep their existing terms. Failed conversions do not use Vision pages.
 
 If Vision asks for an account, show that message to the user and ask them to run:
 
@@ -101,6 +101,6 @@ Standard can continue when Nutrient is unavailable. After Vision connects, it ca
 
 ## Plans and licensing
 
-Standard conversion is free. With an account or API key, Vision uses the account's monthly allowance. Existing SDK licenses keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
+Standard conversion is free. With an account or API key, Vision uses the account's monthly allowance. Nutrient CLI license keys keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
 
 Use is subject to the [Nutrient PDF to Markdown License](https://github.com/PSPDFKit/pdf-to-markdown/blob/main/LICENSE.md) and Nutrient's [Privacy Policy](https://www.nutrient.io/legal/privacy/). Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient.

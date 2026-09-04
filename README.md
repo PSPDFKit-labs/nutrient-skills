@@ -11,7 +11,7 @@ These skills run the Nutrient CLI on your computer. Their performance results co
 - **Better on difficult pages.** Vision handles scans, photographs, handwriting, formulas, and complex layouts. In the benchmark, it leads every accuracy measure shown while remaining faster than Docling.
 - **Local files.** The CLI does not upload your PDF or converted output to Nutrient. Usage reports include a random event ID, the command, Standard or Vision mode, input page count, time, and CLI version. They do not include file names, paths, document contents, or output. Text sent to an AI agent follows that provider's policies.
 
-Standard conversion is free and does not require an account, including in containers and CI. Vision requires a Nutrient account, API key, or existing SDK license. With an account or API key, each input page uses one Vision page from the account's monthly allowance. Existing SDK licenses keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
+Standard conversion is free and does not require an account, including in containers and CI. Vision requires a Nutrient account, API key, or Nutrient CLI license key. With an account or API key, each input page uses one Vision page from the account's monthly allowance. Nutrient CLI license keys keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
 
 The signed CLI runs on macOS with Apple Silicon, Linux, and Windows. The wrappers download it from Nutrient's CDN on first use. The CLI creates a one-way identifier for the installation. It never sends the system details used to create the identifier. The identifier cannot reveal those details or restore a lost sign-in.
 
