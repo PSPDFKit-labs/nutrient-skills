@@ -1,105 +1,81 @@
 ---
 name: query
 description: >-
-  Ranked (BM-25) retrieval over already-extracted text (output of `pdf-to-markdown`/`pdf-to-text`).
-  For a specific term you can name, a bounded `grep -C "term" file | head` is leaner — use that first.
-  Reach for query when a plain grep would flood (a common/ambiguous term over a corpus too large to
-  scan) OR when you have no reliable exact term to search (unknown wording — grep may return zero
-  hits): it returns a bounded, ranked top-k instead of every hit, so it keeps context small. Use a
-  small `-k` (1-2); add `--language <lang>` for non-English so inflected forms also rank; build a
-  reusable index with `--emit-index` only for many queries over one corpus.
+  Search extracted Markdown or plain text with ranked keyword search. Use this
+  skill after pdf-to-markdown or pdf-to-text when you do not know the document's
+  exact wording or a plain grep would return too many matches. For a known term,
+  use a bounded grep first.
 license: Proprietary
 ---
 
-## Rules for agents (read first)
+## Rules for agents
 
-- **For a specific term you can name, use bounded `grep -C "term" file | head` first** — it's leaner than ranked search.
-- **Use query when grep would FLOOD, or when you have no reliable exact term:** a common/ambiguous term over a corpus too large to scan (grep returns dozens of matches to sift), OR you don't know the document's exact wording (grep may return zero hits, sending you into repeated synonym guessing). query ranks the best passages and returns a bounded top-k, so it keeps context small.
-- **Small `-k` (1-2)** for a single fact; **`--language <lang>`** for non-English so inflected/umlaut forms match (German `Antrag`<->`Anträge`).
-- Build an index (`--emit-index`) only for many queries over the same corpus.
+- For a known term, start with a bounded search such as `grep -n -i -C2 "term" file | head`.
+- Use `query` when you do not know the exact wording or a plain search returns too many matches.
+- Use `-k 1` or `-k 2` for a single fact. Add `--language <lang>` to match related word forms.
+- Build an index with `--emit-index` only when you expect several queries over the same file.
 
 # Query a document
 
-Ranked search over an already-extracted text or Markdown file. You give it a natural-language query; it returns the most relevant line windows (with line numbers), not the whole document. This is the "parse once, then query the file" pattern: convert a PDF a single time, then ask as many questions as you like against the cheap, local text.
+Search an extracted Markdown or text file and return the most relevant line ranges. The command reads the local file; it does not parse PDFs.
 
-This is built for **agent economy**. A converted document can be tens of thousands of lines and will blow out your context window if you read it back. Querying returns only the handful of passages that matter, with line numbers you can use for a precise follow-up read.
+## Related skills
 
-## When to use this
-
-- **Use `query`** when you have a converted file and a *question* — "what's the termination clause", "where are the FY24 revenue figures", "does this mention indemnification". It ranks every line and hands back the best windows.
-- **Use `pdf-to-markdown` / `pdf-to-text` first** to produce the file. `query` does not parse PDFs; it searches their extracted text.
-- **Don't** read the whole converted file into context to find one thing, and don't run grep after grep — that's what this replaces. One ranked query beats many exact-match passes when you don't know the document's exact wording.
-
-## Related Nutrient skills
-
-`query` searches a file a converter already produced, so you'll usually want one of these too — add it the way your agent installs skills (they install separately but share the same underlying binary):
-
-- **`pdf-to-markdown`** — PDF → structured Markdown (headings, lists, tables); best for most RAG / LLM-context work.
-- **`pdf-to-text`** — PDF → layout-preserving plain text; best when column/tabular alignment must survive.
+- **`pdf-to-markdown`** — converts a PDF to structured Markdown.
+- **`pdf-to-text`** — converts a PDF to plain text while preserving columns and spacing.
 
 ## Usage
 
-Before running any commands, set `SKILL_DIR` to the absolute path of the directory containing this SKILL.md file. Use `$SKILL_DIR/bin/query` in all commands below.
+Set `SKILL_DIR` to the absolute path of the directory containing this file. Use `$SKILL_DIR/bin/query` in the commands below.
 
-The `$SKILL_DIR/bin/query` wrapper installs the platform-specific binary into `~/.local/share/nutrient/cli/` from the CDN (cached; it only checks for updates every 6 hours). The same binary backs `pdf-to-markdown`, `pdf-to-text`, `query`, and `self-update`; installing any one of these skills gets you the same `~/.local/share/nutrient/cli/` install — so once a PDF is converted you can search it with this skill.
+The wrapper downloads the CLI from Nutrient's CDN on first use and stores it in `~/.local/share/nutrient/cli/`. It checks for updates every six hours.
 
 ```bash
-$SKILL_DIR/bin/query text INPUT.md "your natural-language query" [-k N] [-e N]
+$SKILL_DIR/bin/query text INPUT.md "your question" [-k N] [-e N]
 ```
 
-- `INPUT.md` — the extracted text or Markdown file (the output of `pdf-to-markdown` / `pdf-to-text`), **or** a prebuilt index (see below). The input type is auto-detected.
-- `"query"` — natural-language query, matched case-insensitively. Put several relevant terms in one query; BM-25 rewards rare, on-topic words, so a richer query ranks better.
-- `-k N` — maximum number of windows to return (default 8). Keep it small; you usually want the top 1–3.
-- `-e N` — context lines around each hit (default 5). Use `-e 0` for just the matching line, or a larger value when you need more surrounding context.
+- `INPUT.md` — an extracted Markdown or text file, or a saved query index.
+- `"your question"` — the words to rank. Include several specific terms when useful.
+- `-k N` — the maximum number of result windows. The default is 8; use 1–3 for most questions.
+- `-e N` — the number of surrounding lines. The default is 5; use 0 to return only matching lines.
 
-Each result is a `Lines A-B` window (1-based, inclusive) followed by those lines. Line numbers are **global** to the document, so you can `Read INPUT.md` at that exact range for full context.
+Each result starts with a 1-based `Lines A-B` range. Use that range for a focused follow-up read when needed.
 
-### Reusing an index for repeated questions
+### Reuse an index
 
-If you'll ask several questions about the same document, build the index once and query that instead of rebuilding it every call:
+Create an index when you expect several questions about the same file:
 
 ```bash
-# First call: emit a reusable index alongside the answer.
 $SKILL_DIR/bin/query text INPUT.md "first question" --emit-index INPUT.idx
-
-# Later calls: query the index — it's self-contained and skips the rebuild.
 $SKILL_DIR/bin/query text INPUT.idx "second question"
-$SKILL_DIR/bin/query text INPUT.idx "third question"
 ```
 
-The index is a self-describing file (it carries the document's lines), so `$SKILL_DIR/bin/query text INPUT.idx "..."` needs nothing else. The wrapper auto-detects whether you passed text or an index — same command either way.
+The index contains the source lines, so later queries need only the index file.
 
 ## Workflow
 
-1. **Convert once**: run `pdf-to-markdown` or `pdf-to-text` to produce `INPUT.md` / `INPUT.txt`. Do this a single time per document.
-2. **Query, don't read**: ask your question with `$SKILL_DIR/bin/query text INPUT.md "..."`. Do *not* read the full converted file into context to answer — that's the cost this skill exists to avoid.
-3. **Use the line numbers**: the windows are usually enough to answer directly. If you need more, `Read INPUT.md` at the reported `Lines A-B` range — a targeted read, not the whole file.
-4. **Don't waste time**: for repeat questions on the same document, reuse the `--emit-index` index (above) so each query skips the rebuild.
-5. **Report concisely**: answer from the returned windows. Don't paste the whole document back to the user.
+1. Convert the PDF once with `pdf-to-markdown` or `pdf-to-text`.
+2. Run one focused query with a small `-k` value.
+3. Answer from the returned passages. Read a wider line range only when needed.
+4. Reuse an index for later questions about the same file.
 
-## Tips for good queries
+## Query tips
 
-- **Be specific and lexical.** BM-25 is keyword ranking, not embeddings — it matches the words you give it. Use the terms you expect on the page ("indemnification", "net revenue", "effective date"), including synonyms, rather than a vague paraphrase.
-- **One rich query beats many narrow ones.** Stack the relevant terms into a single query instead of issuing several.
-- **Adjust context with `-e`, not by reading the file.** The default `-e 5` already gives a generous window; raise it for more surrounding text, or drop to `-e 0` for just the matching line. Only fall back to a full `Read` at the reported range when you truly need the wider section.
-- **Raise `-k` only when you expect multiple distinct mentions.** For a single fact, `-k 1` is enough.
+- Use specific words likely to appear in the document.
+- Put related terms in one query instead of running several narrow queries.
+- Add `--language en`, or another ISO language code, to match inflected forms.
+- Increase `-e` for more context. Increase `-k` only when you expect several separate answers.
 
 ## Troubleshooting
 
-- **`No relevant matches found` (printed to stdout, exit 0)**: nothing ranked above the relevance threshold — the query words don't appear, or are too common. Try different/rarer terms, or `--mode lenient`. This is a message, not document content; don't treat it as a result.
-- **Truly empty output / no text to search**: the converted file has no text (an image-only PDF converts to an empty file; `query` searches text only and does not OCR). Re-check the `pdf-to-markdown` / `pdf-to-text` conversion before re-querying.
-- **Hits look off-topic**: the query was too generic, so common words dominated. Add rarer, more specific terms, or tighten with `--mode strict`.
-- **Inflected words missed** (e.g. "terminate" vs "termination"): pass `--language en` (or another ISO code) to enable stemming; the default is no stemming, exact word forms only. Run `$SKILL_DIR/bin/query --help` for the full flag list.
-- **Non-zero exit code**: read stderr. Common causes — the input file doesn't exist, or (on the very first run) a network issue while downloading the binary.
-- **First run is slow**: the wrapper downloads the platform binary once (~a few seconds); later runs use the cache. Per-query cost after that is dominated by a one-time index build, which `--emit-index` removes for subsequent calls.
+- **`No relevant matches found`:** Try a more specific term, a synonym, or `--mode lenient`. The message is not document content.
+- **Empty output:** Check that the converted file contains text. `query` does not perform OCR.
+- **Poor matches:** Add rarer terms or use `--mode strict`.
+- **Nonzero exit:** Read stderr and report the specific error. Common causes are a missing input file or a first-run download failure.
+- **First run is slow:** The wrapper downloads the platform binary once. Later runs use the cached copy.
 
-## License
+## Usage and licensing
 
-Free for processing up to 1,000 documents per calendar month. Each `query` call is one processing event and counts as one document against that quota — the same as a `pdf-to-markdown` / `pdf-to-text` conversion. The "parse once, query many" guidance saves your agent's context tokens and re-parse time, not the document quota (and an `--emit-index` rebuild saved is time/CPU, not quota).
+`query` is free to use. It runs locally, requires no account, reports no usage, and uses no Vision pages.
 
-Commercial license required for:
-- processing over 1,000 documents/month
-- redistributing the binary
-- OEM/white-label use
-
-Contact `sales@nutrient.io` for commercial licensing.
+Use is subject to the [Nutrient PDF to Markdown License](https://github.com/PSPDFKit/pdf-to-markdown/blob/main/LICENSE.md) and Nutrient's [Privacy Policy](https://www.nutrient.io/legal/privacy/). Redistribution, OEM, embedded, and white-label use require a separate agreement with Nutrient.

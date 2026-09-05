@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Updated the PDF-to-Markdown, PDF-to-Text, and Query skills for account-enabled Nutrient CLI releases.
+- Added `nutrient auth login`, `status`, and `logout` to the conversion skills.
+- Documented free Standard conversion, per-page Vision usage, local processing, usage reporting, API-key automation, and offline behavior.
+- Clarified that `query` is free, runs locally, and does not use Vision pages.
+- Fixed SHA-256 verification for downloaded CLI archives.
+
 ## nutrient-dws-mcp 0.1.0
 
 Initial release of the Codex-focused Nutrient DWS MCP plugin.

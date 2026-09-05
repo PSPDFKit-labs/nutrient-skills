@@ -4,14 +4,18 @@ AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works wi
 
 ## Why these skills
 
-The document extraction skills aren't wrappers around a prompt. They run a real document engine locally, and the accuracy numbers come from a public benchmark, not a set we picked ourselves:
+These skills run the Nutrient CLI on your computer. Their performance results come from the public 200-document [opendataloader-bench](https://github.com/opendataloader-project/opendataloader-bench) corpus.
 
-- **Fast and free.** `pdf-to-markdown` extracts digital-born PDFs at about **0.004 seconds per page** — roughly **134× docling's throughput** on the public 200-document [opendataloader-bench](https://github.com/opendataloader-project/opendataloader-bench) corpus, at essentially the same overall accuracy (0.89 vs 0.89; docling edges it at the third decimal). (Throughput, not a like-for-like single-document race: Nutrient converts batch-parallel while docling runs sequentially — see the [method](https://github.com/PSPDFKit/pdf-to-markdown/blob/main/docs/benchmarks.md#speed).) Free up to 1,000 documents a month, no key and no signup.
-- **Tuned for how agents actually work.** The skills tell the agent to parse once and search with a bounded `grep`, reaching for ranked retrieval only when a plain grep would flood context. In our own testing that noticeably cut the token cost of answering questions over a document, at the same accuracy — the win is the instructions, not just the tool.
-- **Accurate when the page is hard.** The licensed `--vision` tier adds a local machine-vision pipeline for scanned, photographed, and handwritten documents. On the same corpus it tops every accuracy metric while still running faster than docling.
-- **Local by default.** Binaries are signed and run on macOS (Apple Silicon), Linux, and Windows. The local CLI does not upload your source PDFs to Nutrient. (Two honest caveats: extracted text you then feed to your own LLM/agent goes to that model provider like any other prompt, and the CLI downloads its binary from Nutrient's CDN on first run.)
+- **Fast.** Standard conversion processes PDFs with selectable text at about **0.004 seconds per page**. On this benchmark, it has roughly **134× Docling's throughput** and the same rounded overall accuracy (0.89). Nutrient processes the batch in parallel, while Docling processes it sequentially; see the [benchmark method](https://github.com/PSPDFKit/pdf-to-markdown/blob/main/docs/benchmarks.md#speed).
+- **Efficient for agents.** Convert each PDF once. Search the saved output with a bounded `grep`, or use `query` when you do not know the exact wording or expect too many matches.
+- **Better on difficult pages.** Vision handles scans, photographs, handwriting, formulas, and complex layouts. In the benchmark, it leads every accuracy measure shown while remaining faster than Docling.
+- **Local files.** The CLI does not upload your PDF or converted output to Nutrient. Usage reports include a random event ID, the command, Standard or Vision mode, input page count, time, and CLI version. They do not include file names, paths, document contents, or output. Text sent to an AI agent follows that provider's policies.
 
-Method and full tables: [pdf-to-markdown benchmarks](https://github.com/PSPDFKit/pdf-to-markdown#benchmarks) and the [live results page](https://www.nutrient.io/api/data-extraction-api/benchmarks/).
+Standard conversion is free and does not require an account, including in containers and CI. Vision requires a Nutrient account, API key, or Nutrient CLI license key. With an account or API key, each input page uses one Vision page from the account's monthly allowance. Nutrient CLI license keys keep their existing terms. See [current plans](https://www.nutrient.io/api/pricing/pdf-to-markdown/).
+
+The CLI runs on macOS 13 or newer with Apple Silicon, Linux with glibc 2.38 or newer, and Windows. Linux also needs libcurl 4, ICU, and OpenSSL 3. The wrappers download the CLI from Nutrient's CDN on first use. The CLI creates a one-way identifier for the installation. It never sends the system details used to create the identifier. The identifier cannot reveal those details or restore a lost sign-in.
+
+Method and full tables: [PDF to Markdown benchmarks](https://github.com/PSPDFKit/pdf-to-markdown#benchmarks).
 
 ## Available Skills
 
@@ -24,9 +28,9 @@ Method and full tables: [pdf-to-markdown benchmarks](https://github.com/PSPDFKit
 | [`nutrient-dws`](plugins/nutrient-dws) | `dws-viewer-api` | Upload documents and mint viewer session JWTs for the Nutrient cloud Viewer API. Embeds interactive viewing, annotation, forms, and signing via cloud infrastructure — no viewing/storage servers to run (you still mint session tokens from your backend) |
 | [`make-pdf`](plugins/make-pdf) | `make-pdf` | Generate PDFs from Markdown or HTML — single files or whole directories — with accessible PDF/UA, archival PDF/A, and watermark outputs, plus built-in conformance verification |
 | [`remediate-pdf`](plugins/remediate-pdf) | `remediate-pdf` | Remediate existing PDFs: auto-tag with PDF/UA semantic structure (headings, lists, tables, reading order) via the Nutrient DWS Accessibility API (auto-tag only — verify output with the bundled verify-pdf.py) |
-| [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Extract text from PDFs as structured, semantic Markdown |
+| [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Convert PDF content to structured Markdown |
 | [`pdf-to-text`](plugins/pdf-to-text) | `pdf-to-text` | Extract layout-preserving plain text from PDFs |
-| [`query`](plugins/query) | `query` | Find the most relevant passages in an extracted document with ranked (BM-25) search |
+| [`query`](plugins/query) | `query` | Find relevant passages in an extracted document with ranked keyword search |
 | [`nutrient-sdk-dev`](plugins/nutrient-sdk-dev) | 13 SDK skills | Build with Nutrient SDKs — Web Viewer, Document Authoring, mobile (iOS/Android/React Native/Flutter/MAUI), server (Python/Java/Node.js/.NET), self-hosted Document Engine, and AI Assistant |
 
 ## Installation
