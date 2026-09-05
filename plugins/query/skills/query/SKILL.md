@@ -28,7 +28,7 @@ Search an extracted Markdown or text file and return the most relevant line rang
 
 Set `SKILL_DIR` to the absolute path of the directory containing this file. Use `$SKILL_DIR/bin/query` in the commands below.
 
-The wrapper downloads the signed CLI from Nutrient's CDN on first use and stores it in `~/.local/share/nutrient/cli/`. It checks for updates every six hours.
+The wrapper downloads the CLI from Nutrient's CDN on first use and stores it in `~/.local/share/nutrient/cli/`. It checks for updates every six hours.
 
 ```bash
 $SKILL_DIR/bin/query text INPUT.md "your question" [-k N] [-e N]

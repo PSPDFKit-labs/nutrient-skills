@@ -29,7 +29,7 @@ Convert PDFs to plain text while preserving columns, indentation, and table alig
 
 Set `SKILL_DIR` to the absolute path of the directory containing this file. Use `$SKILL_DIR/bin/pdf-to-text` in the commands below.
 
-The wrapper downloads the signed CLI from Nutrient's CDN on first use and stores it in `~/.local/share/nutrient/cli/`. It checks for updates every six hours.
+The wrapper downloads the CLI from Nutrient's CDN on first use and stores it in `~/.local/share/nutrient/cli/`. It checks for updates every six hours.
 
 ### Convert one PDF
 
