@@ -29,6 +29,14 @@
       "category": "Document Processing"
     },
     {
+      "name": "query",
+      "source": {
+        "source": "local",
+        "path": "./plugins/query"
+      },
+      "category": "Document Processing"
+    },
+    {
       "name": "nutrient-sdk-dev",
       "source": {
         "source": "local",

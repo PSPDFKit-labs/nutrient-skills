@@ -1,7 +1,7 @@
 {
   "name": "query",
-  "version": "1.0.0",
-  "description": "Find the most relevant passages in an already-extracted document with ranked (BM-25) search.",
+  "version": "1.1.0",
+  "description": "Find relevant passages in an extracted document with ranked keyword search.",
   "skills": "./skills/",
   "interface": {
     "displayName": "Query"

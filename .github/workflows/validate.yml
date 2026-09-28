@@ -1,0 +1,25 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pdf-cli-skills:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install ShellCheck
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y shellcheck
+
+      - name: Validate PDF CLI skills
+        run: python3 scripts/validate-pdf-cli-skills.py
