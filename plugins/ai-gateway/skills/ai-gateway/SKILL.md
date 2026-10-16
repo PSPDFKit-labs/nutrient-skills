@@ -115,7 +115,10 @@ text-only.
 curl --fail-with-body https://api.nutrient.io/ai/v1/responses \
   -H "Authorization: Bearer $NUTRIENT_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model": "nutrient-m", "input": "Summarize the attached incident report in two sentences."}'
+  -d '{
+    "model": "nutrient-m",
+    "input": "Rewrite this incident note in two plain sentences a non-technical stakeholder can understand: Production database is returning 500s for all write requests since 14:02 UTC; read traffic is unaffected. Root cause under investigation."
+  }'
 ```
 
 ## Setup
@@ -126,26 +129,6 @@ curl --fail-with-body https://api.nutrient.io/ai/v1/responses \
   useful for trying the cookbooks below before wiring in a live key).
 - Base URL for `/responses`, `/chat/completions`, `/systemone`, and `/models`:
   `https://api.nutrient.io/ai/v1`.
-- Using the TypeSafe SDK (`@typesafe-ai/sdk`) for decision calls instead of raw HTTP? It works
-  **unmodified** against this gateway — point `baseURL` at `https://api.nutrient.io/ai` (no
-  `/v1`; the SDK appends `/v1/systemone` and `/v1/models` itself):
-
-  ```ts
-  import { TypeSafeClient, noul } from "@typesafe-ai/sdk";
-
-  const client = new TypeSafeClient({
-    apiKey: process.env.NUTRIENT_API_KEY,
-    baseURL: "https://api.nutrient.io/ai",
-    defaultModel: "nutrient-decision",
-  });
-
-  const { answers } = await client.systemOne({
-    state: "I was charged twice. Please help.",
-    questions: { billing: noul("Is this about billing?") },
-  });
-  console.log(answers.billing.noul); // calibrated probability, 0..1
-  ```
-
 - Never log, echo, or commit the key. Use it only from trusted backend code — not browsers,
   mobile apps, or client-side code.
 
