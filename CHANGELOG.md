@@ -5,7 +5,7 @@
 Initial release of the AI Gateway plugin and skill.
 
 - Teaches chat models (`nutrient-s`/`nutrient-m`/`nutrient-l` via `/responses` or
-  `/chat/completions`) vs. the TypeSafe-compatible decision API (`nutrient-decision`,
+  `/chat/completions`) vs. the TypeSafe-compatible decision API (`nutrient-document-decision`,
   `nutrient-systemone` via `/systemone`) with calibrated `noul`/`choice`/`score` questions
 - No bundled script — plain REST, documented for direct use from any language/stack, including a
   `@typesafe-ai/sdk` cookbook since the gateway is wire-compatible with it

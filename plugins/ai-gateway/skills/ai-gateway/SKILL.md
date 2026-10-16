@@ -10,7 +10,7 @@ description: >-
   to a category", "flag for review", "rate the severity/quality", or anything else that would
   otherwise need regex, keyword matching, or asking a chat model to emit structured JSON. Route
   to a chat model for open-ended generation, summarization, or tool-calling. Triggers include AI
-  Gateway, nutrient-decision, nutrient-systemone, System One, TypeSafe, calibrated probability,
+  Gateway, nutrient-document-decision, nutrient-systemone, System One, TypeSafe, calibrated probability,
   noul question, choice question, score question, classify this document/message, route to a
   category, flag for review, confidence threshold.
 license: MIT
@@ -28,7 +28,7 @@ metadata:
 Two primitives, no bundled script — AI Gateway is a plain REST API, so write the call in
 whatever language the project already uses. **Chat models** (`nutrient-s`, `nutrient-m`,
 `nutrient-l`) answer `POST /responses` or `POST /chat/completions` with OpenAI-compatible
-request/response shapes. **Decision models** (`nutrient-decision`, `nutrient-systemone`) answer
+request/response shapes. **Decision models** (`nutrient-document-decision`, `nutrient-systemone`) answer
 `POST /systemone` with a calibrated probability instead of free text.
 
 ## Choosing chat vs. decision
@@ -63,7 +63,7 @@ costs less confidence than the same probability on a distant level, so the two a
 across question types.
 
 Label/level limits differ by model: `nutrient-systemone` accepts up to 255 `choice` labels and
-2–10 `score` levels; `nutrient-decision` accepts at most 26 `choice` labels and 2–26 `score`
+2–10 `score` levels; `nutrient-document-decision` accepts at most 26 `choice` labels and 2–26 `score`
 levels (each option must tokenize to a single native label — a request exceeding either model's
 limit is rejected with HTTP 400, `upstream_rejected_request`).
 
@@ -72,7 +72,7 @@ curl --fail-with-body https://api.nutrient.io/ai/v1/systemone \
   -H "Authorization: Bearer $NUTRIENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "nutrient-decision",
+    "model": "nutrient-document-decision",
     "state": "I was charged twice for my subscription this month.",
     "questions": {
       "billing": { "type": "noul", "instructions": "Is this message about billing?" },
@@ -90,7 +90,7 @@ your own evaluation data, and route uncertain results for review rather than har
 
 ## Two decision models — pick one, know the difference
 
-- **`nutrient-decision`** (recommended) — Nutrient's own model, run on Nutrient infrastructure.
+- **`nutrient-document-decision`** (recommended) — Nutrient's own model, run on Nutrient infrastructure.
   Accepts images embedded anywhere in `state`, at any nesting depth, as
   `{"type": "image", "source": "data:<mime>;base64,<bytes>"}`; surrounding text and every
   embedded image are evaluated together.
@@ -140,7 +140,7 @@ curl --fail-with-body https://api.nutrient.io/ai/v1/responses \
 curl --fail-with-body https://api.nutrient.io/ai/v1/systemone \
   -H "Authorization: Bearer $NUTRIENT_API_KEY" -H "Content-Type: application/json" \
   -d '{
-    "model": "nutrient-decision",
+    "model": "nutrient-document-decision",
     "state": {
       "invoice": { "vendor": "Acme Corp", "total": 1024.50, "currency": "USD" },
       "page_1": { "type": "image", "source": "data:image/png;base64,'"$(base64 -i invoice.png)"'" }
@@ -157,7 +157,7 @@ curl --fail-with-body https://api.nutrient.io/ai/v1/systemone \
 curl --fail-with-body https://api.nutrient.io/ai/v1/systemone \
   -H "Authorization: Bearer $NUTRIENT_API_KEY" -H "Content-Type: application/json" \
   -d '{
-    "model": "nutrient-decision",
+    "model": "nutrient-document-decision",
     "state": "Production database is returning 500s for all write requests.",
     "questions": {
       "severity": {
@@ -186,7 +186,7 @@ curl --fail-with-body https://api.nutrient.io/ai/v1/systemone \
 
 ## Common issues
 
-- **Wrong model for the capability you need.** `nutrient-decision` supports images in `state`
+- **Wrong model for the capability you need.** `nutrient-document-decision` supports images in `state`
   and a smaller label/level ceiling (26); `nutrient-systemone` is text-only with a larger ceiling
   (255 labels, 10 score levels). Pick based on what the request actually needs, and confirm via
   `GET /models` rather than assuming.
