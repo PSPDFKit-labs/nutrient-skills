@@ -55,6 +55,14 @@
         "authentication": "ON_USE"
       },
       "category": "Document Processing"
+    },
+    {
+      "name": "ai-gateway",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-gateway"
+      },
+      "category": "Development"
     }
   ]
 }
