@@ -1,7 +1,7 @@
 {
   "name": "nutrient-dws",
-  "version": "2.0.0",
-  "description": "Document processing skills powered by the Nutrient Document Web Services API. Includes the document-processor-api skill (convert, merge, OCR, watermark, redact, sign, optimize) and the document-extraction-api skill (structural parse / Markdown via /extraction/parse, plus schema field extraction with citations via /extraction/extract).",
+  "version": "2.1.0",
+  "description": "Document processing skills powered by the Nutrient Document Web Services API. Includes the document-processor-api skill (convert, merge, OCR, watermark, redact, sign, optimize), the document-extraction-api skill (structural parse / Markdown via /extraction/parse, plus schema field extraction with citations via /extraction/extract), and the ai-gateway skill (OpenAI-compatible chat models and calibrated yes/no, choice, and score judgments via the Nutrient AI Gateway).",
   "skills": "./skills/",
   "interface": {
     "displayName": "Nutrient DWS"
@@ -21,6 +21,8 @@
     "processing",
     "convert",
     "ocr",
-    "extract"
+    "extract",
+    "ai-gateway",
+    "llm"
   ]
 }

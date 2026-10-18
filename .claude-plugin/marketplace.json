@@ -12,8 +12,8 @@
   "plugins": [
     {
       "name": "nutrient-dws",
-      "description": "Document processing skills powered by the Nutrient Document Web Services API. Includes the document-processor-api skill (convert, merge, OCR, watermark, redact, sign, optimize) and the document-extraction-api skill (structural parse / Markdown via /extraction/parse).",
-      "version": "2.0.0",
+      "description": "Document processing skills powered by the Nutrient Document Web Services API. Includes the document-processor-api skill (convert, merge, OCR, watermark, redact, sign, optimize), the document-extraction-api skill (structural parse / Markdown via /extraction/parse), and the ai-gateway skill (OpenAI-compatible chat models and calibrated yes/no, choice, and score judgments via the Nutrient AI Gateway).",
+      "version": "2.1.0",
       "source": "./plugins/nutrient-dws",
       "author": {
         "name": "Nutrient",
@@ -28,7 +28,9 @@
         "processing",
         "convert",
         "ocr",
-        "extract"
+        "extract",
+        "ai-gateway",
+        "llm"
       ]
     },
     {
@@ -155,28 +157,6 @@
         "ai-assistant",
         "pdf",
         "development"
-      ]
-    },
-    {
-      "name": "ai-gateway",
-      "description": "Call managed AI models through the Nutrient AI Gateway: OpenAI-compatible chat models (nutrient-s/m/l) and the System One decision API (nutrient-document-decision, nutrient-systemone) for calibrated yes/no, choice, and score judgments.",
-      "version": "1.0.0",
-      "source": "./plugins/ai-gateway",
-      "author": {
-        "name": "Nutrient",
-        "email": "support@nutrient.io"
-      },
-      "license": "MIT",
-      "keywords": [
-        "nutrient",
-        "ai-gateway",
-        "ai",
-        "llm",
-        "decision",
-        "system-one",
-        "typesafe",
-        "judgment",
-        "classification"
       ]
     }
   ]

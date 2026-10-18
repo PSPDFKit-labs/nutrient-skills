@@ -9,8 +9,7 @@
        "./plugins/pdf-to-text/skills",
        "./plugins/query/skills",
        "./plugins/nutrient-dws/skills",
-       "./plugins/nutrient-sdk-dev/skills",
-       "./plugins/ai-gateway/skills"
+       "./plugins/nutrient-sdk-dev/skills"
      ]
   }
 }
