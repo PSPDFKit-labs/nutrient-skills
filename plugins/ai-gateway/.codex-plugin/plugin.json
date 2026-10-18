@@ -1,0 +1,17 @@
+{
+  "name": "ai-gateway",
+  "version": "1.0.0",
+  "description": "Call managed AI models through the Nutrient AI Gateway: OpenAI-compatible chat models (nutrient-s/m/l) and the System One decision API (nutrient-document-decision, nutrient-systemone) for calibrated yes/no, choice, and score judgments.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Gateway"
+  },
+  "author": {
+    "name": "Nutrient",
+    "email": "support@nutrient.io"
+  },
+  "homepage": "https://nutrient.io",
+  "repository": "https://github.com/pspdfkit-labs/nutrient-skills",
+  "license": "MIT",
+  "keywords": ["nutrient", "ai-gateway", "ai", "llm", "decision", "system-one", "typesafe", "judgment", "classification"]
+}

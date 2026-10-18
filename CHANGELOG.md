@@ -1,5 +1,17 @@
 # Changelog
 
+## ai-gateway ai-gateway 1.0.0
+
+Initial release of the AI Gateway plugin and skill.
+
+- Teaches chat models (`nutrient-s`/`nutrient-m`/`nutrient-l` via `/responses` or
+  `/chat/completions`) vs. the TypeSafe-compatible decision API (`nutrient-document-decision`,
+  `nutrient-systemone` via `/systemone`) with calibrated `noul`/`choice`/`score` questions
+- No bundled script — plain REST, documented for direct use from any language/stack, including a
+  `@typesafe-ai/sdk` cookbook since the gateway is wire-compatible with it
+- Covers the two decision models' capability differences (image input, choice/score limits) and
+  "good vibe coding"-style guidance on thresholds and reviewable question files
+
 ## Unreleased
 
 - Updated the PDF-to-Markdown, PDF-to-Text, and Query skills for account-enabled Nutrient CLI releases.

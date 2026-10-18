@@ -32,6 +32,7 @@ Method and full tables: [PDF to Markdown benchmarks](https://github.com/PSPDFKit
 | [`pdf-to-text`](plugins/pdf-to-text) | `pdf-to-text` | Extract layout-preserving plain text from PDFs |
 | [`query`](plugins/query) | `query` | Find relevant passages in an extracted document with ranked keyword search |
 | [`nutrient-sdk-dev`](plugins/nutrient-sdk-dev) | 13 SDK skills | Build with Nutrient SDKs — Web Viewer, Document Authoring, mobile (iOS/Android/React Native/Flutter/MAUI), server (Python/Java/Node.js/.NET), self-hosted Document Engine, and AI Assistant |
+| [`ai-gateway`](plugins/ai-gateway) | `ai-gateway` | Call OpenAI-compatible chat models or the TypeSafe-compatible decision API (calibrated noul/choice/score judgments) via the Nutrient AI Gateway |
 
 ## Installation
 
@@ -49,6 +50,7 @@ npx skills add pspdfkit-labs/nutrient-skills --skill remediate-pdf
 npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-markdown
 npx skills add pspdfkit-labs/nutrient-skills --skill pdf-to-text
 npx skills add pspdfkit-labs/nutrient-skills --skill query
+npx skills add pspdfkit-labs/nutrient-skills --skill ai-gateway
 ```
 
 The `nutrient-sdk-dev` plugin's 13 per-SDK skills install the same way (e.g. `--skill nutrient-web-sdk`).
@@ -74,6 +76,7 @@ Both Claude Code and Codex support the `/plugin` command:
 /plugin install pdf-to-text@nutrient-skills
 /plugin install query@nutrient-skills
 /plugin install nutrient-sdk-dev@nutrient-skills
+/plugin install ai-gateway@nutrient-skills
 ```
 
 After installation, the plugin's skills will automatically load in all future sessions.
