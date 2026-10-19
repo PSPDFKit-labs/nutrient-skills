@@ -1,8 +1,8 @@
 # Changelog
 
-## ai-gateway ai-gateway 1.0.0
+## nutrient-dws ai-gateway 1.0.0
 
-Initial release of the AI Gateway plugin and skill.
+Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 
 - Teaches chat models (`nutrient-s`/`nutrient-m`/`nutrient-l` via `/responses` or
   `/chat/completions`) vs. the TypeSafe-compatible decision API (`nutrient-document-decision`,

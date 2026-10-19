@@ -26,13 +26,13 @@ Method and full tables: [PDF to Markdown benchmarks](https://github.com/PSPDFKit
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-extraction-api` | Parse documents into a structural model or Markdown via the Nutrient Data Extraction API |
 | [`nutrient-dws`](plugins/nutrient-dws) | `grounded-rag-ingestion` | Chunk documents into provenance-carrying JSONL (element type, page, bbox, confidence, reading order) for grounded, auditable RAG pipelines |
 | [`nutrient-dws`](plugins/nutrient-dws) | `dws-viewer-api` | Upload documents and mint viewer session JWTs for the Nutrient cloud Viewer API. Embeds interactive viewing, annotation, forms, and signing via cloud infrastructure — no viewing/storage servers to run (you still mint session tokens from your backend) |
+| [`nutrient-dws`](plugins/nutrient-dws) | `ai-gateway` | Call OpenAI-compatible chat models or the TypeSafe-compatible decision API (calibrated noul/choice/score judgments) via the Nutrient AI Gateway |
 | [`make-pdf`](plugins/make-pdf) | `make-pdf` | Generate PDFs from Markdown or HTML — single files or whole directories — with accessible PDF/UA, archival PDF/A, and watermark outputs, plus built-in conformance verification |
 | [`remediate-pdf`](plugins/remediate-pdf) | `remediate-pdf` | Remediate existing PDFs: auto-tag with PDF/UA semantic structure (headings, lists, tables, reading order) via the Nutrient DWS Accessibility API (auto-tag only — verify output with the bundled verify-pdf.py) |
 | [`pdf-to-markdown`](plugins/pdf-to-markdown) | `pdf-to-markdown` | Convert PDF content to structured Markdown |
 | [`pdf-to-text`](plugins/pdf-to-text) | `pdf-to-text` | Extract layout-preserving plain text from PDFs |
 | [`query`](plugins/query) | `query` | Find relevant passages in an extracted document with ranked keyword search |
 | [`nutrient-sdk-dev`](plugins/nutrient-sdk-dev) | 13 SDK skills | Build with Nutrient SDKs — Web Viewer, Document Authoring, mobile (iOS/Android/React Native/Flutter/MAUI), server (Python/Java/Node.js/.NET), self-hosted Document Engine, and AI Assistant |
-| [`ai-gateway`](plugins/ai-gateway) | `ai-gateway` | Call OpenAI-compatible chat models or the TypeSafe-compatible decision API (calibrated noul/choice/score judgments) via the Nutrient AI Gateway |
 
 ## Installation
 
@@ -76,7 +76,6 @@ Both Claude Code and Codex support the `/plugin` command:
 /plugin install pdf-to-text@nutrient-skills
 /plugin install query@nutrient-skills
 /plugin install nutrient-sdk-dev@nutrient-skills
-/plugin install ai-gateway@nutrient-skills
 ```
 
 After installation, the plugin's skills will automatically load in all future sessions.
