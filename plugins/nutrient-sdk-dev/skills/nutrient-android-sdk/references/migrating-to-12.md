@@ -20,9 +20,27 @@ Going from 11.x to 12.1, apply the 12.0 guide first, then the 12.1 guide. Callin
 2. **Inventory before editing.** Search the app for every API the relevant guides list, including overrides and interface implementations, not just calls. Group the findings by file.
 3. **Confirm each mapping.** Take replacements from the guides, then check the exact overload, imports, nullability and return type against the target SDK, for example with `javap` on the AAR's `classes.jar` in the Gradle cache. Do not invent replacements. Leave a call unchanged and report it when the guides and the SDK disagree, or when no replacement is listed.
 4. **Migrate confirmed cases,** keeping unrelated code, names and formatting as they are.
-5. **Update the build.** Apply the requirements below, and declare dependencies the SDK no longer supplies.
+5. **Update the build.** Apply the requirements below, declare dependencies the SDK no longer supplies, and move the dependency to Maven Central if the app still uses the legacy artifact (see the next section).
 6. **Compile and run the existing tests.** A successful compile does not prove the behavior is unchanged. Check the behavior changes each guide lists.
 7. **Report** what changed, what was deliberately kept, what is unresolved (with file locations), and which checks ran.
+
+## Switch to Maven Central
+
+Since 11.6 the SDK is on Maven Central as `io.nutrient:nutrient-android-sdk`. The legacy `io.nutrient:nutrient` artifact on `https://my.nutrient.io/maven` is only kept for a transition period, so move the app over while upgrading:
+
+```kotlin
+dependencies {
+    implementation("io.nutrient:nutrient-android-sdk:<version>")
+}
+```
+
+Then remove the `https://my.nutrient.io/maven` repository from `settings.gradle(.kts)`, unless the app uses the OCR add-on. OCR (`io.nutrient:nutrient-ocr` and its language packs) is not on Maven Central yet, so keep the repository for it. Its POM still depends on the legacy `io.nutrient:nutrient`, so exclude that, or the app gets the SDK's classes twice:
+
+```kotlin
+implementation("io.nutrient:nutrient-ocr:<version>") {
+    exclude(group = "io.nutrient", module = "nutrient")
+}
+```
 
 ## 11.x → 12.0 at a glance
 

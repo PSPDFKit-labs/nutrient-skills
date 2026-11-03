@@ -14,7 +14,7 @@ Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 
 ## Unreleased
 
-- Added a 12.x migration reference to the Android SDK skill: which guides to fetch for 11.x → 12.0 and 12.0 → 12.1, a migration workflow, and rules for the RxJava to coroutines conversion. Also corrected the Maven Central coordinates.
+- Added a 12.x migration reference to the Android SDK skill: which guides to fetch for 11.x → 12.0 and 12.0 → 12.1, a migration workflow, rules for the RxJava to coroutines conversion, and moving from the legacy `io.nutrient:nutrient` artifact to Maven Central. Also corrected the Maven Central coordinates.
 - Updated the PDF-to-Markdown, PDF-to-Text, and Query skills for account-enabled Nutrient CLI releases.
 - Added `nutrient auth login`, `status`, and `logout` to the conversion skills.
 - Documented free Standard conversion, per-page Vision usage, local processing, usage reporting, API-key automation, and offline behavior.
