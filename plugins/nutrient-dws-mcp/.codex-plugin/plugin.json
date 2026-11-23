@@ -1,7 +1,7 @@
 {
   "name": "nutrient-dws-mcp",
   "version": "0.1.0",
-  "description": "Process, sign, redact, parse, and extract documents through the Nutrient DWS MCP server.",
+  "description": "Legacy plugin for the retired local Nutrient DWS MCP server. Use the hosted Nutrient plugin for new work.",
   "author": {
     "name": "Nutrient",
     "email": "support@nutrient.io",
@@ -14,18 +14,16 @@
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
-    "displayName": "Nutrient DWS MCP",
-    "shortDescription": "Process documents with Nutrient DWS",
-    "longDescription": "Convert, OCR, sign, redact, parse, and extract data from documents with the bundled Nutrient DWS MCP server.",
+    "displayName": "Nutrient DWS MCP (Legacy)",
+    "shortDescription": "Switch to the hosted Nutrient plugin",
+    "longDescription": "For document tasks, install the hosted Nutrient plugin from PSPDFKit/nutrient-mcp-plugins and sign in with your Nutrient account.",
     "developerName": "Nutrient",
     "category": "Document Processing",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://www.nutrient.io/mcp/",
     "privacyPolicyURL": "https://www.nutrient.io/legal/privacy",
     "defaultPrompt": [
-      "Convert this document to PDF.",
-      "OCR this scanned document and save a searchable PDF.",
-      "Extract the key fields from this document with citations."
+      "How do I switch to the hosted Nutrient plugin?"
     ]
   }
 }

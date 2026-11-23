@@ -9,19 +9,10 @@ This script is the single primitive for document understanding via /extraction/p
 One call returns the full structural document model — typed elements with bounding boxes,
 confidence scores, and reading order — or a whole-document Markdown string.
 
-DWS Extract is a separate product from DWS Processor. It uses its own API key, supplied
-via the NUTRIENT_EXTRACT_API_KEY environment variable. Calls to /extraction/parse with a
-DWS Processor key return 403.
+Use a key with Data Extraction access in NUTRIENT_EXTRACT_API_KEY, or a global key with
+that access in NUTRIENT_API_KEY.
 
-Billing note: /extraction/parse is billed against **extraction credits**, which are a
-separate billing bucket from the processor API credits consumed by /build, /sign, OCR,
-and other Processor API endpoints.
-
-Per-page extraction-credit costs by mode:
-  text:       1 extraction credit  — fast Markdown from born-digital documents (no OCR/AI)
-  structure:  1.5 extraction credits — OCR + spatial elements with bounding boxes
-  understand: 9 extraction credits  — AI layout analysis, table detection, semantic classification
-  agentic:    18 extraction credits — VLM-augmented; deepest visual understanding
+For per-page rates, see https://www.nutrient.io/guides/dws-data-extraction/pricing.md.
 
 Output shapes:
   spatial  (default): response.output.elements — typed elements list
@@ -53,17 +44,10 @@ from lib.common import assert_local_file, create_client, handle_error
 
 async def main() -> None:
     parser = argparse.ArgumentParser(
-        description=(
-            "Parse a document with the Nutrient Data Extraction API and write the result. "
-            "Billed against extraction credits (separate from processor API credits)."
-        ),
+        description="Parse a document with the Nutrient Data Extraction API and write the result.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Extraction credit costs per page:
-  text:       1 extraction credit  (born-digital Markdown, no OCR)
-  structure:  1.5 extraction credits (OCR + spatial elements)  [default]
-  understand: 9 extraction credits  (AI layout + table detection)
-  agentic:    18 extraction credits (VLM-augmented)
+Per-page pricing: https://www.nutrient.io/guides/dws-data-extraction/pricing.md
 
 Output shapes:
   spatial  (default): typed element list at output.elements
@@ -85,11 +69,7 @@ Output shapes:
         "--mode",
         choices=["text", "structure", "understand", "agentic"],
         default="structure",
-        help=(
-            "Processing mode controlling cost and quality. "
-            "text=1cr, structure=1.5cr (default), understand=9cr, agentic=18cr — "
-            "all costs are extraction credits per page."
-        ),
+        help="Processing mode controlling cost and extraction depth (default: structure).",
     )
     parser.add_argument(
         "--output-format",
@@ -104,7 +84,7 @@ Output shapes:
     )
     args = parser.parse_args()
 
-    # Validate input is a local file (the /extraction/parse endpoint is multipart-only).
+    # This helper uses the local-file form of the Parse API.
     assert_local_file(args.input, "input")
     input_path = Path(args.input)
     if not input_path.exists():
