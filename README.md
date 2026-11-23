@@ -2,9 +2,11 @@
 
 AI agent skills for [Nutrient](https://www.nutrient.io/) APIs and SDKs. Works with Claude Code, Codex, Pi, Cursor, Gemini CLI, and [other agents](https://github.com/vercel-labs/skills#supported-agents).
 
+For an agent to process a document in chat, use the [Nutrient plugin for hosted MCP](https://github.com/PSPDFKit/nutrient-mcp-plugins). It bundles the connector with document workflows and uses browser sign-in. To build document processing into your own app, use the API and SDK skills below.
+
 ## Why these skills
 
-These skills run the Nutrient CLI on your computer. Their performance results come from the public 200-document [opendataloader-bench](https://github.com/opendataloader-project/opendataloader-bench) corpus.
+The PDF-to-Markdown, PDF-to-Text, and Query skills run the Nutrient CLI on your computer. The conversion results come from the public 200-document [opendataloader-bench](https://github.com/opendataloader-project/opendataloader-bench) corpus.
 
 - **Fast.** Standard conversion processes PDFs with selectable text at about **0.004 seconds per page**. On this benchmark, it has roughly **134× Docling's throughput** and the same rounded overall accuracy (0.89). Nutrient processes the batch in parallel, while Docling processes it sequentially; see the [benchmark method](https://github.com/PSPDFKit/pdf-to-markdown/blob/main/docs/benchmarks.md#speed).
 - **Efficient for agents.** Convert each PDF once. Search the saved output with a bounded `grep`, or use `query` when you do not know the exact wording or expect too many matches.
@@ -21,9 +23,8 @@ Method and full tables: [PDF to Markdown benchmarks](https://github.com/PSPDFKit
 
 | Plugin | Skill | Description |
 |--------|-------|-------------|
-| [`nutrient-dws-mcp`](plugins/nutrient-dws-mcp) | `nutrient-dws-mcp` | MCP-only Codex plugin for converting, OCRing, signing, redacting, parsing, and extracting documents with browser OAuth |
 | [`nutrient-dws`](plugins/nutrient-dws) | `document-processor-api` | Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents via the Nutrient Document Web Services API |
-| [`nutrient-dws`](plugins/nutrient-dws) | `document-extraction-api` | Parse documents into a structural model or Markdown via the Nutrient Data Extraction API |
+| [`nutrient-dws`](plugins/nutrient-dws) | `document-extraction-api` | Parse documents into Markdown or spatial elements, extract schema-defined fields with citations, classify documents, and detect document boundaries in a packet via the Nutrient Data Extraction API |
 | [`nutrient-dws`](plugins/nutrient-dws) | `grounded-rag-ingestion` | Chunk documents into provenance-carrying JSONL (element type, page, bbox, confidence, reading order) for grounded, auditable RAG pipelines |
 | [`nutrient-dws`](plugins/nutrient-dws) | `dws-viewer-api` | Upload documents and mint viewer session JWTs for the Nutrient cloud Viewer API. Embeds interactive viewing, annotation, forms, and signing via cloud infrastructure — no viewing/storage servers to run (you still mint session tokens from your backend) |
 | [`nutrient-dws`](plugins/nutrient-dws) | `ai-gateway` | Call OpenAI-compatible chat models or the TypeSafe-compatible decision API (calibrated noul/choice/score judgments) via the Nutrient AI Gateway |
@@ -80,16 +81,11 @@ Both Claude Code and Codex support the `/plugin` command:
 
 After installation, the plugin's skills will automatically load in all future sessions.
 
-### Codex MCP plugin
+### Hosted Nutrient MCP
 
-The `nutrient-dws-mcp` plugin bundles the local Nutrient DWS MCP server and an MCP-only skill. Add this repository as a Codex marketplace and install the plugin:
+Follow the [Nutrient plugin install instructions](https://github.com/PSPDFKit/nutrient-mcp-plugins#install) to connect your agent and load the document workflow skill. For an MCP client that connects directly, use the [hosted MCP setup guide](https://www.nutrient.io/api/mcp-server-pdf-automation-llm/).
 
-```bash
-codex plugin marketplace add pspdfkit-labs/nutrient-skills
-codex plugin add nutrient-dws-mcp@nutrient-skills
-```
-
-The plugin installs a pinned MCP package into a user cache on first use, then starts its stdio server directly to avoid `npx` shim handshake issues. It does not invoke the standalone DWS CLI. The first API-backed tool call opens browser OAuth, and later calls reuse the cached Nutrient session.
+If you previously installed `nutrient-dws-mcp@nutrient-skills` in Codex, switch to the hosted plugin. The [local DWS MCP server](https://github.com/PSPDFKit/nutrient-dws-mcp-server) it bundles is retired.
 
 ### Pi
 

@@ -14,6 +14,8 @@ Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 
 ## Unreleased
 
+- Refresh the Data Extraction and Processor skills with task routing, a cited invoice example, and guidance for classification and automatic packet separation.
+- Point MCP users to the supported hosted Nutrient plugin and mark the local Codex plugin as legacy.
 - Added a placeholder `signer-api` skill to the `nutrient-dws` plugin: what the Signer API does, and that it is available only on the Enterprise plan.
 - Added a 12.x migration reference to the Android SDK skill: which guides to fetch for 11.x → 12.0 and 12.0 → 12.1, a migration workflow, rules for the RxJava to coroutines conversion, and moving from the legacy `io.nutrient:nutrient` artifact to Maven Central. Also corrected the Maven Central coordinates.
 - Updated the PDF-to-Markdown, PDF-to-Text, and Query skills for account-enabled Nutrient CLI releases.

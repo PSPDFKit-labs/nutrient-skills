@@ -1,7 +1,7 @@
 interface:
-  display_name: "Nutrient DWS MCP"
-  short_description: "Process documents through Nutrient DWS MCP"
-  default_prompt: "Use $nutrient-dws-mcp to process this document with the appropriate Nutrient DWS tool."
+  display_name: "Nutrient DWS MCP (Legacy)"
+  short_description: "Switch to the hosted Nutrient plugin"
+  default_prompt: "Use $nutrient-dws-mcp to find the migration steps for the hosted Nutrient plugin."
 
 dependencies:
   tools:

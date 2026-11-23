@@ -28,5 +28,5 @@ suggests which tools to reach for when slicing and reshaping the response.
 | Render formulas | any LaTeX renderer (MathJax, KaTeX, matplotlib) | `formula` elements carry `latex` strings ready to feed a renderer. |
 | Post-process markdown output (chunk on headings, strip tables, etc.) | `markdown-it-py`, `mistune`, or a regex on `#` lines | `output.markdown` uses standard heading hierarchy. |
 
-For the per-call extraction-credit cost, read `usage.data_extraction_credits.cost`
-directly from the response — no tool needed.
+For the billed amount, read `usage.global_usd.cost` for USD plans or
+`usage.data_extraction_credits.cost` for legacy credit plans.

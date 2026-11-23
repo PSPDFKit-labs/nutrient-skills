@@ -2,7 +2,7 @@
 name: document-processor-api
 description: >-
   Process documents with Nutrient DWS. Use when the user wants to generate PDFs from HTML or URLs,
-  convert Office/images/PDFs, assemble or split packets, OCR scans, extract text/tables/key-value
+  convert Office/images/PDFs, assemble documents or split PDFs at known page ranges, OCR scans, extract text/tables/key-value
   pairs, redact PII, watermark, sign, fill forms, optimize PDFs, or produce compliance outputs like
   PDF/A or PDF/UA. Triggers include convert to PDF, merge these PDFs, OCR this scan, extract tables,
   redact PII, sign this PDF, make this PDF/A, or linearize for web delivery.
@@ -19,6 +19,8 @@ metadata:
 # Nutrient Document Processing
 
 Use Nutrient DWS for managed document workflows where fidelity, compliance, or multi-step processing matters more than local-tool convenience.
+For schema-defined fields with citations or whole-document Markdown, use the sibling
+`document-extraction-api` skill.
 
 ## Setup
 - Get a Nutrient DWS API key at <https://dashboard.nutrient.io/sign_up/?product=processor>.
@@ -26,7 +28,7 @@ Use Nutrient DWS for managed document workflows where fidelity, compliance, or m
   ```bash
   export NUTRIENT_API_KEY="nutr_sk_..."
   ```
-- MCP setups commonly use `@nutrient-sdk/dws-mcp-server` with `NUTRIENT_DWS_API_KEY`.
+- For work through an MCP client, use the [hosted Nutrient plugin](https://github.com/PSPDFKit/nutrient-mcp-plugins) and sign in with your Nutrient account.
 - Scripts live in `scripts/` relative to this SKILL.md. Use the directory containing this SKILL.md as the working directory:
   ```bash
   cd <directory containing this SKILL.md> && uv run scripts/<script>.py --help
@@ -37,7 +39,8 @@ Use Nutrient DWS for managed document workflows where fidelity, compliance, or m
 - Generate PDFs from HTML templates, uploaded assets, or remote URLs.
 - Convert Office, HTML, image, and PDF files between supported formats.
 - OCR scans and extract text, tables, or key-value pairs.
-- Redact PII, watermark, sign, fill forms, merge, split, rotate, flatten, or encrypt PDFs.
+- Redact PII, watermark, sign, fill forms, merge, split at known page ranges, rotate, flatten, or encrypt PDFs.
+- To detect where documents start and end in a combined packet, use the [Data Extraction split endpoint](https://www.nutrient.io/guides/dws-data-extraction/split.md).
 - Produce delivery targets like PDF/A, PDF/UA, optimized PDFs, or linearized PDFs.
 - Check credits before large, batch, or AI-heavy runs.
 
@@ -118,13 +121,5 @@ Read only what you need:
 - All client methods are async and should run via `asyncio.run(main())`.
 - If import fails, install dependency with `uv add nutrient-dws`.
 
-## Security Hardening Addendum
-
-- Prefer a pinned, preinstalled MCP server binary over runtime package fetches.
-  - Preferred: `npm i -g @nutrient-sdk/dws-mcp-server@<pinned-version>`
-  - Avoid unpinned runtime fetch in production paths.
-- Never store `NUTRIENT_DWS_API_KEY` in committed JSON config files.
-  - Use process env injection at runtime (shell/export, secrets manager, or host env).
-- Restrict file access with `SANDBOX_PATH` to the minimum required working directory.
-- Before enabling MCP mode in production, verify package provenance and lock version.
+- Supply `NUTRIENT_API_KEY` through the runtime environment or a secrets manager. Keep API keys out of committed configuration.
 
