@@ -24,4 +24,5 @@ Single-fetch LLM-curated dumps — prefer these over the human-shaped docs site 
 
 - **Package**: `npm install @nutrient-sdk/react-native`. The legacy `pspdfkit-react-native` package is the pre-rebrand name; new projects must use `@nutrient-sdk/react-native`.
 - **Component**: `<NutrientView />` renders an embedded PDF viewer. The legacy `PSPDFKitView` is the pre-rebrand name.
-- **License key**: set via the `Nutrient` native module at app startup — `NativeModules.Nutrient.setLicenseKey(...)` (the native module is renamed from `PSPDFKit` to `Nutrient`).
+- **License key**: set at app startup, before any other SDK call, on the `Nutrient` object the package exports: `Nutrient.setLicenseKeys(androidKey, iosKey)` for both platforms, or `Nutrient.setLicenseKey(key)` for the platform that is running. (The native module is renamed from `PSPDFKit` to `Nutrient`.) Keep the keys out of the repository.
+- **No key**: per the package README (4.5.1), the library starts in demo mode by default, with a watermark on each PDF and usage limited to 60 minutes. Not run for this skill; the native iOS and Android SDKs behave this way and a relaunch gives another hour. Demo mode is expected on a developer machine and in CI and is not a reason to switch to another library.
