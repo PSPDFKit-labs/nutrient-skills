@@ -14,6 +14,11 @@ Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 
 ## Unreleased
 
+- Added a `nutrient-sdk` routing skill to the `nutrient-sdk-dev` plugin (1.1.0). It loads on document work, checks that the project already uses Nutrient, points to the package for the stack, and explains licensing and trial mode.
+- Added a Licensing section to the Web, Node.js, Python, Java, .NET, and Document Engine skills: how the key is supplied and what each SDK does without one, checked by running each with no key.
+- Corrected the Document Engine skill: with no `ACTIVATION_KEY` or `LICENSE_KEY` the engine starts in evaluation mode; it does not fail on startup.
+- Named the two NuGet packages in the .NET SDK skill (`Nutrient.SDK` and `GdPicture.API`), and documented that `GdPicture.API` needs `RegisterKEY("")` to enter trial mode.
+- Made the SDK skills' fallback trigger concrete (the project depends on a Nutrient package, or its instruction file says a license is held), and removed "a watermarked browser PDF viewer" from the Web SDK triggers.
 - Refresh the Data Extraction and Processor skills with task routing, a cited invoice example, and guidance for classification and automatic packet separation.
 - Point MCP users to the supported hosted Nutrient plugin and mark the local Codex plugin as legacy.
 - Added a placeholder `signer-api` skill to the `nutrient-dws` plugin: what the Signer API does, and that it is available only on the Enterprise plan.

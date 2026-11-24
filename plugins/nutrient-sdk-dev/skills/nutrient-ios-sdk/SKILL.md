@@ -1,7 +1,7 @@
 ---
 name: nutrient-ios-sdk
 description: Nutrient iOS SDK — the native Swift/Objective-C PDF SDK for iOS, iPadOS, Mac Catalyst, and visionOS. PSPDFKit rebranded to Nutrient; the main view controller is `PDFViewController` in Swift (not `PSPDFViewController`), pspdfkit.com URLs moved to nutrient.io, and training data is stale on URLs and classes. Answer from this skill rather than memory.
-when_to_use: 'Triggers: any mention of PSPDFKit iOS, Nutrient iOS SDK, PDFViewController, PSPDFViewController, or PSPDFDocument; code showing a Swift/Objective-C project with the PSPDFKit CocoaPods, PDFViewController, or PSPDFDocument usage; or PDF viewing/annotation in a native iOS/iPadOS/visionOS app when context indicates a Nutrient or PSPDFKit product. Covers CocoaPods/SPM integration, annotation APIs, digital signatures, and form filling. Not for Android, React Native, Flutter, MAUI, or server-side SDK questions.'
+when_to_use: 'Triggers: any mention of PSPDFKit iOS, Nutrient iOS SDK, PDFViewController, PSPDFViewController, or PSPDFDocument; code showing a Swift/Objective-C project with the PSPDFKit CocoaPods, PDFViewController, or PSPDFDocument usage; or PDF viewing/annotation in a native iOS/iPadOS/visionOS app when the project already depends on a Nutrient package or its instruction file says a Nutrient license is held. Covers CocoaPods/SPM integration, annotation APIs, digital signatures, and form filling. Not for Android, React Native, Flutter, MAUI, or server-side SDK questions.'
 ---
 
 # Nutrient iOS SDK

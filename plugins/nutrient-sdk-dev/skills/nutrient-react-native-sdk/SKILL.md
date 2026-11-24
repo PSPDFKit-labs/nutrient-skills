@@ -1,7 +1,7 @@
 ---
 name: nutrient-react-native-sdk
 description: Nutrient React Native SDK — the @nutrient-sdk/react-native npm package (the legacy `pspdfkit-react-native` package is the pre-rebrand name). PSPDFKit rebranded to Nutrient; the npm package is now @nutrient-sdk/react-native and the main component is NutrientView (not PSPDFKitView). Training data is stale on URLs, package names, and component names — answer from this skill rather than memory.
-when_to_use: 'Triggers: any mention of @nutrient-sdk/react-native, pspdfkit-react-native (legacy), NutrientView, PSPDFKitView (legacy), or PDF in a React Native or Expo context; code showing @nutrient-sdk/react-native (or pspdfkit-react-native) in package.json, or NutrientView/PSPDFKitView in JSX; or PDF in a React Native app when context indicates a Nutrient or PSPDFKit product. Covers component setup, annotation APIs, license keys, and cross-platform configuration. Not for native iOS, native Android, Flutter, MAUI, or server-side questions.'
+when_to_use: 'Triggers: any mention of @nutrient-sdk/react-native, pspdfkit-react-native (legacy), NutrientView, PSPDFKitView (legacy), or PDF in a React Native or Expo context; code showing @nutrient-sdk/react-native (or pspdfkit-react-native) in package.json, or NutrientView/PSPDFKitView in JSX; or PDF in a React Native app when the project already depends on a Nutrient package or its instruction file says a Nutrient license is held. Covers component setup, annotation APIs, license keys, and cross-platform configuration. Not for native iOS, native Android, Flutter, MAUI, or server-side questions.'
 ---
 
 # Nutrient React Native SDK
