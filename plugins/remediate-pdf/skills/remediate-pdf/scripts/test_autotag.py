@@ -120,10 +120,81 @@ def test_quota_note_fallback():
     assert "complete" in A.quota_note(None, None)
 
 
+# --- shared helpers: keys, addresses, output paths ------------------------------------------
+def test_normalize_key_strips_and_rejects_bad_characters():
+    assert A.normalize_key(" pdf_live_abc\r\n") == "pdf_live_abc"
+    assert A.normalize_key("") is None and A.normalize_key("  ") is None
+    assert A.normalize_key(None) is None
+    for bad in ("pdf live", "pdf_live_\u00e4", "pdf_live\x00x"):
+        try:
+            A.normalize_key(bad)
+            assert False, repr(bad)
+        except ValueError as e:
+            assert bad not in str(e)  # the error never echoes the key
+
+
+def test_redact_handles_several_secrets():
+    out = A.redact("key k1 and password p@ss", "k1", "p@ss", None)
+    assert "k1" not in out and "p@ss" not in out
+
+
+def test_is_public_ip_looks_inside_nat64_and_mapped():
+    assert A.is_public_ip("93.184.216.34")
+    assert not A.is_public_ip("10.0.0.1")
+    assert not A.is_public_ip("64:ff9b::7f00:1")      # NAT64 of 127.0.0.1
+    assert not A.is_public_ip("::ffff:192.168.1.1")    # IPv4-mapped private
+    assert A.is_public_ip("64:ff9b::5db8:d822")        # NAT64 of a public address
+
+
+def test_url_rejects_non_default_port():
+    for bad in ("https://93.184.216.34:8443/x.pdf", "https://93.184.216.34:22/x.pdf"):
+        try:
+            A.validate_remote_url(bad)
+            assert False, bad
+        except ValueError as e:
+            assert "443" in str(e)
+
+
+def test_check_output_path_refuses_overwrite_input_and_existing():
+    with tempfile.TemporaryDirectory() as d:
+        src = Path(d) / "doc.pdf"
+        src.write_bytes(b"%PDF-1.4")
+        for target, overwrite in ((src, True), (src, False)):
+            try:
+                A.check_output_path(target, src, overwrite)
+                assert False
+            except ValueError as e:
+                assert "input" in str(e)
+        existing = Path(d) / "out.pdf"
+        existing.write_bytes(b"x")
+        try:
+            A.check_output_path(existing, src, False)
+            assert False
+        except ValueError as e:
+            assert "--overwrite" in str(e)
+        A.check_output_path(existing, src, True)            # allowed with --overwrite
+        A.check_output_path(Path(d) / "new" / "o.pdf", src, False)  # creates the directory
+
+
+def test_write_private_resets_mode_and_refuses_existing():
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d) / "o.pdf"
+        out.write_bytes(b"old")
+        os.chmod(out, 0o644)
+        try:
+            A.write_private(out, b"new", overwrite=False)
+            assert False, "expected FileExistsError"
+        except FileExistsError:
+            pass
+        A.write_private(out, b"new", overwrite=True)
+        assert out.read_bytes() == b"new" and (out.stat().st_mode & 0o777) == 0o600
+
+
 # --- CLI error paths (subprocess, plain python3) --------------------------------------------
 def _run(args, env_extra=None):
     env = dict(os.environ)
     env.pop("NUTRIENT_ACCESSIBILITY_API_KEY", None)
+    env.pop("NUTRIENT_API_KEY", None)
     if env_extra:
         env.update(env_extra)
     return subprocess.run([sys.executable, str(SCRIPT), *args],
@@ -166,6 +237,47 @@ def test_input_and_url_mutually_exclusive():
     r = _run(["--input", "a.pdf", "--url", "https://x/y.pdf"],
              {"NUTRIENT_ACCESSIBILITY_API_KEY": "k"})
     assert r.returncode != 0  # argparse rejects
+
+
+def test_key_with_inner_space_fails_without_echoing_it():
+    r = _run(["--input", "x.pdf"], {"NUTRIENT_ACCESSIBILITY_API_KEY": "pdf_live secret"})
+    assert r.returncode == 1 and "secret" not in r.stderr
+
+
+def test_nutrient_api_key_fallback_is_accepted():
+    r = _run(["--input", "/nope/missing.pdf"], {"NUTRIENT_API_KEY": "k"})
+    assert r.returncode == 1 and "not found" in r.stderr
+
+
+def test_scan_without_text_layer_exits_4():
+    try:
+        from pypdf import PdfWriter
+    except ImportError:
+        print("SKIP test_scan_without_text_layer_exits_4 (pypdf not installed)")
+        return
+    with tempfile.TemporaryDirectory() as d:
+        scan = Path(d) / "scan.pdf"
+        w = PdfWriter()
+        w.add_blank_page(612, 792)
+        with open(scan, "wb") as f:
+            w.write(f)
+        r = _run(["--input", str(scan)], {"NUTRIENT_ACCESSIBILITY_API_KEY": "k"})
+        assert r.returncode == 4 and "ocr.py" in r.stderr
+
+
+def test_existing_output_refused_before_any_call():
+    try:
+        from pypdf import PdfWriter  # noqa: F401
+    except ImportError:
+        print("SKIP test_existing_output_refused_before_any_call (pypdf not installed)")
+        return
+    fixture = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "sample.pdf"
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d) / "o.pdf"
+        out.write_bytes(b"x")
+        r = _run(["--input", str(fixture), "--output", str(out), "--yes"],
+                 {"NUTRIENT_ACCESSIBILITY_API_KEY": "k"})
+        assert r.returncode == 1 and "--overwrite" in r.stderr
 
 
 if __name__ == "__main__":

@@ -1,15 +1,15 @@
 # Nutrient Accessibility API Reference
 
-Facts for `autotag.py`, `validate.py`, and `prepare.py`. Auto-tagging behavior was confirmed by
-live probe on 2026-06-22; validation and the `/build` preparation requests were confirmed by live
-calls on 2026-11-19 and against the DWS Accessibility validation guide.
+Facts for `autotag.py` and `validate.py`. Auto-tagging behavior was confirmed by live probe on
+2026-06-22; validation was confirmed by live calls on 2026-11-19 and against the DWS Accessibility
+validation guide.
 
 ## Authentication and keys
 
 - `Authorization: Bearer <key>`. Keys use the **`pdf_live_` prefix**.
 - On current plans (unified USD billing, from 2026-11-16), **one Nutrient account and key cover
-  the Accessibility API and the Processor API**. The scripts read `NUTRIENT_ACCESSIBILITY_API_KEY`
-  (`prepare.py` also accepts `NUTRIENT_API_KEY`).
+  the Accessibility API and the Processor API**. The scripts read `NUTRIENT_ACCESSIBILITY_API_KEY`,
+  falling back to `NUTRIENT_API_KEY`, and strip surrounding whitespace.
 - Older accounts created before unified billing had separate per-product keys; on those, a
   Processor key returns `401` on `/accessibility/*` and an Accessibility key may not work on
   `/build`. If a call returns `401`, check which key the account issued for that API.
@@ -35,15 +35,16 @@ for its usage note.
 
 **Image-only scans:** auto-tagging doesn't add a text layer; it structures the text it finds. A
 scan without OCR has no readable text to tag, and validation won't catch that, so run OCR first
-(`prepare.py --ocr`).
+(`document-processor-api`'s `ocr.py`). `autotag.py` exits 4 when the first pages have no text.
 
 ## Validation endpoint
 
 - **`POST https://api.nutrient.io/accessibility/validate_pdfua`**
 - **Input:** exactly one source, either a local file as multipart field `file` or a remote PDF as
   multipart field `url`. `validate.py` always uploads the file (it fetches `--url` client-side).
-- **Password-protected PDFs:** send the password in the `pspdfkit-pdf-password` header. Passwords
-  with characters a header can't carry go as `base64:<encoded-password>`.
+- **Password-protected PDFs:** send the password in the `pspdfkit-pdf-password` header, plain or
+  as `base64:<encoded-password>`. `validate.py` always sends the base64 form, so spaces and
+  non-ASCII characters can't break the header.
 - **Profile:** PDF/UA-1 is the only supported profile.
 - **Result:** a completed validation returns **HTTP 200 whether or not the PDF conforms**. Read
   `isValid` in the body.
@@ -72,24 +73,16 @@ The API report checks what a machine can test. It confirms that an image has alt
 not that the text describes the image, so placeholder alt text such as "image" passes.
 Accessibility Studio's validation warns about placeholder alt text.
 
-### History: the June 2026 probe
+### History
 
-Before the validation endpoint shipped, a live probe on 2026-06-22 found no validation route:
-`POST /accessibility/validate` and `/accessibility/check` returned the gateway's catch-all `403`
-for unrecognized POST routes, and validation was not a mode of `autotag`. The skill shipped
-auto-tag-only with a note to add `validate.py` once an endpoint existed. The endpoint is
-`/accessibility/validate_pdfua`.
+A June 2026 probe found no validation route (`/accessibility/validate` and `/accessibility/check`
+returned the gateway's catch-all `403`), so version 1.0 of this skill shipped auto-tag-only.
 
 ## Preparation through the Processor API
 
-`prepare.py` uses **`POST https://api.nutrient.io/build`** with the same key:
-
-- Conversion (Word, Excel, PowerPoint, RTF, ODT, text, images to PDF):
-  `instructions={"parts":[{"file":"document"}]}` with the file in multipart field `document`.
-- OCR: the same instructions plus `"actions":[{"type":"ocr","language":"english"}]`. Several
-  languages go as a list.
-- On the free plan, `/build` output carries an evaluation watermark, which auto-tagging tags as
-  page content.
+Conversion and OCR run on `/build` through the `document-processor-api` skill (`convert.py`,
+`ocr.py`), with the same key. On the free plan, Processor output is watermarked until the account
+adds a wallet, and auto-tagging tags the watermark as page content.
 
 ## Errors
 
@@ -98,7 +91,7 @@ auto-tag-only with a note to add `validate.py` once an endpoint existed. The end
 | 400 | No source, more than one source, or invalid parameters |
 | 401 | The API key is missing or invalid |
 | 402 | The account has no usage left (monthly usage and wallet) |
-| 403 | Validation: the PDF password is missing or incorrect. Unknown routes also return `403` |
+| 403 | Validation: the PDF password is missing or incorrect, or the key isn't enabled for the Accessibility API. Unknown routes also return `403` |
 | 408 | The request timed out |
 | 413 | The file exceeds the maximum upload size |
 | 502 | The PDF couldn't be downloaded from the supplied URL |
@@ -106,7 +99,7 @@ auto-tag-only with a note to add `validate.py` once an endpoint existed. The end
 Error bodies follow `{"error":{"details":"...","requestId":"...","status":403,"supportUrl":"..."}}`;
 for validation `400`, `403`, and `502`, the body has a machine-readable `reason` (for example
 `missing_source_file`, `password_required`) and a `description`. The scripts redact the API key
-from any error body before printing.
+and PDF password from any error before printing.
 
 ## Pricing
 
@@ -122,7 +115,7 @@ The autotag build stats report `output.type: "pdfua"`, `conversion_engine: "gdpi
 Processor's `/build` PDF/UA output target. The difference between this skill and
 `document-processor-api` is the API surface (auto-tagging plus validation), not tagging quality.
 
-## Open questions remaining
+## Not documented
 
-- **OQ6** — WCAG version/level the output aligns to: not resolved. PDF/UA-1 is the validated
-  target (OQ5 resolved: validation runs PDF/UA-1 only).
+- Nutrient doesn't document a WCAG version or level that auto-tagged output aligns to. PDF/UA-1 is
+  the validated target.

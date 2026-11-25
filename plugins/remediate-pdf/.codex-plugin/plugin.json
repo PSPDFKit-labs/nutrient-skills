@@ -1,7 +1,7 @@
 {
   "name": "remediate-pdf",
   "version": "1.1.0",
-  "description": "Make existing documents accessible: auto-tag PDFs with PDF/UA structure, validate against PDF/UA-1, and convert or OCR Word, image, and scanned files first, via the Nutrient Accessibility API.",
+  "description": "Make existing documents accessible: auto-tag PDFs with PDF/UA structure and validate against PDF/UA-1 via the Nutrient Accessibility API, with Word, image, and scanned files routed through conversion and OCR first.",
   "skills": "./skills/",
   "interface": {
     "displayName": "Remediate PDF"

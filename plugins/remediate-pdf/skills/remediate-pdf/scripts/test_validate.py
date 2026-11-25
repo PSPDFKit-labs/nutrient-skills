@@ -3,8 +3,8 @@
 
 PASSING_REPORT is a real /accessibility/validate_pdfua response captured from the live API.
 FAILING_REPORT follows the documented report schema (failedChecks entries with id,
-occurrenceCount, and occurrences carrying context, objectReference, and statement); replace it with
-a captured failing response when one is available.
+occurrenceCount, and occurrences carrying context, objectReference, and statement), with veraPDF
+PDF/UA-1 check IDs; replace it with a captured failing response when one is available.
 
 Run: `python3 test_validate.py` (Python 3.10+)
 """
@@ -12,6 +12,7 @@ Run: `python3 test_validate.py` (Python 3.10+)
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -57,7 +58,7 @@ FAILING_REPORT = {
                 ],
             },
             {
-                "id": "7.1-8",
+                "id": "7.1-9",
                 "occurrenceCount": 1,
                 "occurrences": [
                     {"context": "root/document[0]/metadata[0]", "objectReference": "1 0 R",
@@ -78,12 +79,13 @@ def test_conformant_only_when_isvalid_true():
 
 def test_summary_pass():
     s = V.summarize_report(PASSING_REPORT, "doc.pdf")
-    assert "conforms to PDF/UA-1" in s and "No failed checks" in s
+    assert "passed PDF/UA-1 machine validation" in s and "no failed checks" in s
+    assert "A person still needs to check" in s
 
 
 def test_summary_fail_lists_checks_and_counts():
     s = V.summarize_report(FAILING_REPORT, "doc.pdf")
-    assert "does not conform" in s
+    assert "failed PDF/UA-1 validation" in s
     assert "4 failure(s) across 2 check(s)" in s
     assert "An annotation has no description. (3 occurrence(s), check 7.18.1-2)" in s
     assert "The document has no title in its metadata." in s
@@ -108,16 +110,28 @@ def test_summary_counts_when_failurecount_missing():
     assert "3 failure(s) across 2 check(s)" in V.summarize_report(report, "doc.pdf")
 
 
-def test_password_header_ascii_and_base64():
-    assert V.password_header_value("s3cret!") == "s3cret!"
-    encoded = V.password_header_value("pässwörd")
-    assert encoded.startswith("base64:") and "ä" not in encoded
+def test_password_header_always_base64():
+    import base64
+
+    for pw in ("s3cret!", "pässwörd", "hunter2 ", " lead", "base64:literal"):
+        value = V.password_header_value(pw)
+        assert value.startswith("base64:") and pw not in value
+        assert base64.b64decode(value[len("base64:"):]).decode("utf-8") == pw
+
+
+def test_error_hints():
+    assert "password is incorrect" in V.error_hint(403, sent_password=True)
+    assert "NUTRIENT_PDF_PASSWORD" in V.error_hint(403, sent_password=False)
+    assert "separate keys" in V.error_hint(401, False)
+    assert "wallet" in V.error_hint(402, False)
 
 
 # --- CLI error paths (exit before any network call) -----------------------------------------
 def _run(args, env_extra=None):
     env = dict(os.environ)
     env.pop("NUTRIENT_ACCESSIBILITY_API_KEY", None)
+    env.pop("NUTRIENT_API_KEY", None)
+    env.pop("NUTRIENT_PDF_PASSWORD", None)
     if env_extra:
         env.update(env_extra)
     return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True,
@@ -144,11 +158,26 @@ def test_url_requires_https():
     assert r.returncode == 1 and "https" in r.stderr
 
 
-def test_missing_password_env_fails_fast(tmp=Path("/tmp/validate-test.pdf")):
-    tmp.write_bytes(b"%PDF-1.4\n%%EOF\n")
-    r = _run(["--input", str(tmp), "--password-env", "NO_SUCH_VAR_XYZ"],
-             {"NUTRIENT_ACCESSIBILITY_API_KEY": "pdf_live_x"})
-    assert r.returncode == 1 and "NO_SUCH_VAR_XYZ" in r.stderr
+def test_missing_password_env_fails_fast():
+    with tempfile.TemporaryDirectory() as d:
+        pdf = Path(d) / "doc.pdf"
+        pdf.write_bytes(b"%PDF-1.4\n%%EOF\n")
+        r = _run(["--input", str(pdf), "--with-password"],
+                 {"NUTRIENT_ACCESSIBILITY_API_KEY": "pdf_live_x"})
+        assert r.returncode == 1 and "NUTRIENT_PDF_PASSWORD" in r.stderr
+
+
+def test_report_cannot_overwrite_input_or_existing_file():
+    with tempfile.TemporaryDirectory() as d:
+        pdf = Path(d) / "doc.pdf"
+        pdf.write_bytes(b"%PDF-1.4\n%%EOF\n")
+        r = _run(["--input", str(pdf), "--report", str(pdf), "--overwrite"],
+                 {"NUTRIENT_ACCESSIBILITY_API_KEY": "pdf_live_x"})
+        assert r.returncode == 1 and "input" in r.stderr
+        existing = Path(d) / "doc-validation.json"
+        existing.write_text("{}")
+        r = _run(["--input", str(pdf)], {"NUTRIENT_ACCESSIBILITY_API_KEY": "pdf_live_x"})
+        assert r.returncode == 1 and "--overwrite" in r.stderr
 
 
 if __name__ == "__main__":
