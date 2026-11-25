@@ -6,6 +6,7 @@ description: >-
   pairs, redact PII, watermark, sign, fill forms, optimize PDFs, or produce compliance outputs like
   PDF/A or PDF/UA. Triggers include convert to PDF, merge these PDFs, OCR this scan, extract tables,
   redact PII, sign this PDF, make this PDF/A, or linearize for web delivery.
+  For accessibility or PDF/UA-1 validation of an existing PDF, use remediate-pdf.
 license: MIT
 metadata:
   author: nutrient-sdk

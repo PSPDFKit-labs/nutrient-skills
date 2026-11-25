@@ -41,7 +41,8 @@ text layer) are converted or OCR'd first with the `document-processor-api` skill
 
 ## Which path to take
 
-Start from what the user has:
+For a check-only request, run `validate.py` on the supplied PDF as-is, regardless of its tags.
+Use the table when the user asks to prepare or remediate the file.
 
 | Input | Path |
 |---|---|

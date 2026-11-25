@@ -1,6 +1,6 @@
 {
   "name": "make-pdf",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate finished PDFs from Markdown or HTML — accessible PDF/UA, archival PDF/A, watermarks, batch — with built-in conformance verification.",
   "skills": "./skills/",
   "interface": {

@@ -41,13 +41,13 @@ Reasoning: HTML generation gives you better structure control than post-hoc brow
 
 ## 4. Existing PDF to accessible PDF/UA
 
-Goal: turn a born-digital PDF into a screen-reader-ready artifact.
+Goal: produce a PDF/UA output from a born-digital PDF in a Processor workflow.
 
 Recommended sequence:
 
 1. Start from the cleanest available PDF
 2. Run PDF/UA auto-tagging
-3. Validate the result with your required accessibility checker
+3. Validate the result with `remediate-pdf`'s `validate.py` or the checker the user requires
 
 Reasoning: flattened, rasterized, or noisy inputs reduce tagging quality.
 

@@ -17,6 +17,7 @@ Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 - AGENTS.md: added a rule to bump a plugin's version with every change to its shipped files, and listed where the version is recorded.
 - `nutrient-sdk-dev` 1.1.1: version bump so existing installs pick up the iOS and Android trial corrections below. No content change.
 - README: added an Updating section with the commands that move an existing Claude Code, Codex, or Skills CLI install to the current version.
+- `make-pdf` 1.0.1, `nutrient-dws` 2.1.1, `remediate-pdf` 1.1.1: checks of an existing PDF against PDF/UA now route to `remediate-pdf`. Versions bumped so existing installs receive the change.
 - Android SDK skill: the trial dialog is followed by the app being killed 30 minutes later, and the Kotlin note now names 2.4.10 as the minimum, matching the system compatibility guide.
 - iOS SDK skill: the trial alert blocks the app, and the app is killed 30 minutes later, matching the Android skill.
 - Added a Licensing section to the iOS and Android SDK skills (key call, trial mode, and what happens when the trial hour ends, checked by running each with no key), and a note on the Kotlin version Android SDK 12.1.0 needs.
