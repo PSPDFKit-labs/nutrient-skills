@@ -17,8 +17,7 @@ Cost: auto-tagging is billed per page from the account's monthly usage, then the
 script asks for confirmation above --confirm-over pages (default 10) unless --yes is passed.
 
 Exit codes: 0 = tagged PDF written, 1 = error, 2 = stopped at the cost gate (re-run with --yes
-after the user confirms), 4 = the PDF has no text layer and needs OCR first (--allow-no-text
-overrides).
+after the user confirms), 4 = no extractable text found (--allow-no-text overrides).
 
 This module also holds the helpers validate.py imports: key handling, the client-side URL fetch,
 output-path checks, private file writes, and error redaction.
@@ -31,6 +30,8 @@ import json
 import os
 import socket
 import sys
+import tempfile
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -138,14 +139,12 @@ def quota_gate(pages, confirm_over: int, yes: bool, interactive: bool,
     return False, msg
 
 
-def has_text_layer(path: Path, max_pages: int = 3):
-    """True if any of the first pages has extractable text, False if none do (likely an
-    image-only scan that needs OCR first), None if the file can't be read. Only the first
-    max_pages pages are checked, so a mostly-text PDF with some scanned pages reads as True."""
+def has_text_layer(source: Path | BytesIO) -> bool | None:
+    """Look for extractable text on any page. Return None when the check is inconclusive."""
     try:
         from pypdf import PdfReader
 
-        for page in PdfReader(str(path)).pages[:max_pages]:
+        for page in PdfReader(source).pages:
             if (page.extract_text() or "").strip():
                 return True
         return False
@@ -211,7 +210,10 @@ def check_output_path(out_path: Path, input_path: Path | None, overwrite: bool) 
         raise ValueError(f"output is a symlink; refusing to follow it: {out_path}")
     if out_path.is_dir():
         raise ValueError(f"output is a directory, not a file: {out_path}")
-    if input_path is not None and out_path.resolve() == input_path.resolve():
+    if input_path is not None and (
+        out_path.resolve() == input_path.resolve()
+        or (out_path.exists() and out_path.samefile(input_path))
+    ):
         raise ValueError(f"output would overwrite the input file: {out_path}")
     if out_path.exists() and not overwrite:
         raise ValueError(f"output already exists: {out_path} (pass --overwrite to replace it)")
@@ -224,13 +226,21 @@ def check_output_path(out_path: Path, input_path: Path | None, overwrite: bool) 
 
 
 def write_private(path: Path, data: bytes, overwrite: bool) -> None:
-    """Write data at 0600 without following a symlink. Without overwrite, an existing file is
-    refused (O_EXCL); with it, an existing file is truncated and its mode reset to 0600."""
-    flags = os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | (os.O_TRUNC if overwrite else os.O_EXCL)
-    fd = os.open(path, flags, 0o600)
-    with os.fdopen(fd, "wb") as f:
-        os.fchmod(f.fileno(), 0o600)
-        f.write(data)
+    """Write without following a destination symlink, with mode 0600 on POSIX."""
+    if not overwrite:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+        with os.fdopen(os.open(path, flags, 0o600), "wb") as output:
+            output.write(data)
+        return
+
+    # Close the temporary file before replacing the destination so this also works on Windows.
+    fd, temp_name = tempfile.mkstemp(dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as output:
+            output.write(data)
+        os.replace(temp_name, path)
+    finally:
+        Path(temp_name).unlink(missing_ok=True)
 
 
 def secrets_from_env() -> list[str]:
@@ -312,7 +322,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--yes", action="store_true",
                    help="Bypass the cost confirmation gate (only after the user has confirmed).")
     p.add_argument("--allow-no-text", dest="allow_no_text", action="store_true",
-                   help="Auto-tag even when the PDF has no text layer (normally exit 4: OCR first).")
+                   help="Auto-tag even if no extractable text is found (normally exit 4).")
     return p
 
 
@@ -325,6 +335,18 @@ def _resolve_output(args) -> Path:
     return Path("tagged.pdf")
 
 
+def require_extractable_text(source: Path | BytesIO, allow_no_text: bool) -> None:
+    if allow_no_text or has_text_layer(source) is not False:
+        return
+    print(
+        "Error: no extractable text found in this PDF. If it contains scanned text, "
+        "run document-processor-api's ocr.py first and auto-tag the OCR'd PDF. "
+        "Pass --allow-no-text to auto-tag a PDF that intentionally has no text.",
+        file=sys.stderr,
+    )
+    sys.exit(EXIT_NO_TEXT)
+
+
 async def main() -> None:
     args = build_parser().parse_args()
     key = require_key()
@@ -334,6 +356,7 @@ async def main() -> None:
     try:
         if in_path:
             validate_input(in_path)
+            require_extractable_text(in_path, args.allow_no_text)
             pages = local_page_count(in_path)
         else:
             validate_remote_url(args.url)
@@ -341,16 +364,6 @@ async def main() -> None:
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(EXIT_ERROR)
-
-    if in_path and not args.allow_no_text and has_text_layer(in_path) is False:
-        print(
-            "Error: this PDF has no text layer (likely a scan). Auto-tagging doesn't add one, so "
-            "the result would have no readable text. Run OCR first with document-processor-api: "
-            "`uv run scripts/ocr.py --input <file> --languages english --out <file>-ocr.pdf`, "
-            "then auto-tag the OCR'd file. Pass --allow-no-text to auto-tag anyway.",
-            file=sys.stderr,
-        )
-        sys.exit(EXIT_NO_TEXT)
 
     proceed, message = quota_gate(pages, args.confirm_over, args.yes, sys.stdin.isatty())
     if not proceed:
@@ -377,6 +390,7 @@ async def main() -> None:
             except ValueError as e:
                 print(f"Error: {e}", file=sys.stderr)
                 sys.exit(EXIT_ERROR)
+            require_extractable_text(BytesIO(file_bytes), args.allow_no_text)
         files = {"file": (file_name, file_bytes, "application/pdf")}
         resp = await client.post(AUTOTAG_URL, headers=headers, files=files)
 

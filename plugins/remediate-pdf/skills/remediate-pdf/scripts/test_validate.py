@@ -7,12 +7,18 @@ the live API (FAILING_REPORT is tests/fixtures/validation-failing.json, the unta
 Run: `python3 test_validate.py` (Python 3.10+)
 """
 
+import asyncio
+import io
 import json
 import os
 import subprocess
 import sys
 import tempfile
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
+
+import httpx
 
 sys.path.insert(0, str(Path(__file__).parent))
 import validate as V  # noqa: E402
@@ -149,6 +155,63 @@ def test_report_cannot_overwrite_input_or_existing_file():
         existing.write_text("{}")
         r = _run(["--input", str(pdf)], {"NUTRIENT_ACCESSIBILITY_API_KEY": "pdf_live_x"})
         assert r.returncode == 1 and "--overwrite" in r.stderr
+
+
+def _run_with_response(input_file, output_file, response):
+    """Run the CLI body with an HTTP 200 from a transport that never opens a socket."""
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        return httpx.Response(200, json=response)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+    stdout, stderr = io.StringIO(), io.StringIO()
+    argv = ["validate.py", "--input", str(input_file), "--report", str(output_file)]
+    with (
+        patch.dict(os.environ, {"NUTRIENT_ACCESSIBILITY_API_KEY": "review_dummy"}),
+        patch.object(sys, "argv", argv),
+        patch.object(httpx, "AsyncClient", return_value=client),
+        redirect_stdout(stdout),
+        redirect_stderr(stderr),
+    ):
+        try:
+            asyncio.run(V.main())
+            assert False, "expected a CLI exit"
+        except SystemExit as exit_result:
+            assert len(requests) == 1
+            assert requests[0].method == "POST" and str(requests[0].url) == V.VALIDATE_URL
+            return exit_result.code, stdout.getvalue(), stderr.getvalue()
+
+
+def test_completed_validations_write_report_and_use_distinct_verdicts():
+    fixture = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "sample.pdf"
+    with tempfile.TemporaryDirectory() as d:
+        for response, expected_code, verdict in (
+            (PASSING_REPORT, 0, "passed PDF/UA-1 machine validation"),
+            (FAILING_REPORT, 3, "failed PDF/UA-1 validation"),
+        ):
+            dest = Path(d) / f"report-{expected_code}.json"
+            code, stdout, stderr = _run_with_response(fixture, dest, response)
+            assert code == expected_code and verdict in stdout and not stderr
+            assert json.loads(dest.read_text(encoding="utf-8")) == response
+
+
+def test_malformed_validation_response_is_an_error_without_a_verdict_or_report():
+    fixture = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "sample.pdf"
+    with tempfile.TemporaryDirectory() as d:
+        for response in (
+            [],
+            {},
+            {"isValid": True},
+            {"isValid": False, "validationReport": {}},
+            {"isValid": False, "validationReport": {"failedChecks": []}},
+            {"isValid": True, "validationReport": {"failedChecks": [{"id": "MissingTitle"}]}},
+        ):
+            dest = Path(d) / "report.json"
+            code, stdout, stderr = _run_with_response(fixture, dest, response)
+            assert code == 1 and "validation report" in stderr
+            assert not stdout and not dest.exists()
 
 
 if __name__ == "__main__":

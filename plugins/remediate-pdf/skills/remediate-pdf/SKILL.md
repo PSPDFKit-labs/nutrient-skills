@@ -48,6 +48,7 @@ Start from what the user has:
 | PDF without tags | `autotag.py`, then `validate.py` |
 | PDF that already has tags | `validate.py` first. If it fails, suggest Accessibility Studio's Repair, which keeps the existing tags. Re-tag with `autotag.py` only when the tags are unusable, and warn the user that re-tagging replaces the existing structure and alt text |
 | Scanned PDF (no text layer) | OCR with `document-processor-api`'s `ocr.py`, then `autotag.py`, then `validate.py` |
+| PDF with both digital text and scans | Check whether the scanned pages contain text the reader needs and already have OCR. If required, OCR the missing text before tagging. Text on another page does not establish that the scanned pages are readable |
 | Word, Excel, or PowerPoint file | Best: fix it in the source (heading styles, alt text, title, language) and export a tagged PDF (Word: Save as PDF with "Document structure tags for accessibility"), then `validate.py`. Otherwise convert with `document-processor-api`'s `convert.py`, then `autotag.py` and `validate.py` |
 | Image of a document | `document-processor-api`'s `ocr.py`, then `autotag.py` and `validate.py` |
 
@@ -55,11 +56,29 @@ Validate before the user publishes or shares a file. Auto-tagging is built to pr
 conformant output, but not every file passes (see Anti-patterns). Skip validation only for
 internal drafts the user doesn't plan to publish.
 
-`document-processor-api` is part of the `nutrient-dws` plugin
-(`/plugin install nutrient-dws@nutrient-skills`). Its scripts read `NUTRIENT_API_KEY`, for example
-`uv run scripts/ocr.py --input scan.pdf --languages english --out scan-ocr.pdf` and
-`uv run scripts/convert.py --input report.docx --format pdf --out report.pdf` (check its SKILL.md
-for current flags).
+### OCR and conversion setup
+
+The dashboard prompt installs `remediate-pdf` by itself. When you need OCR or conversion, install
+`document-processor-api` if the agent doesn't already have it:
+
+- Claude Code: if the marketplace is missing, run
+  `claude plugin marketplace add pspdfkit-labs/nutrient-skills`. Then run
+  `claude plugin install nutrient-dws@nutrient-skills`.
+- Skills CLI: run `npx skills add pspdfkit-labs/nutrient-skills --skill document-processor-api`
+  and select the same agent.
+
+Find the directory containing the installed `document-processor-api/SKILL.md` and use that
+directory for its script paths. Its scripts read `NUTRIENT_API_KEY`. If the dashboard set only
+`NUTRIENT_ACCESSIBILITY_API_KEY`, pass that same value as `NUTRIENT_API_KEY` in the Processor
+process environment on a unified plan. For a legacy account with separate keys, use the
+Processor key. Keep the values in the process environment.
+
+With `processor_skill_dir` set to the installed skill directory, run the relevant command:
+
+```bash
+uv run "$processor_skill_dir/scripts/ocr.py" --input /abs/scan.pdf --languages english --out /abs/scan-ocr.pdf
+uv run "$processor_skill_dir/scripts/convert.py" --input /abs/report.docx --format pdf --out /abs/report.pdf
+```
 
 ## Disambiguation from sibling skills
 
@@ -96,8 +115,8 @@ uv run <skill-dir>/scripts/autotag.py --url https://example.com/doc.pdf --output
   downloaded client-side (https on port 443, public addresses only, no redirects).
 - Writes the tagged PDF to `--output` (default `<input-stem>-tagged.pdf`) and prints the pages
   processed. Refuses to replace an existing file unless `--overwrite` is passed.
-- Exit codes: 0 = written; 1 = error; 2 = stopped at the cost gate; 4 = the PDF has no text layer,
-  so OCR it first (`--allow-no-text` overrides).
+- Exit codes: 0 = written; 1 = error; 2 = stopped at the cost gate; 4 = no extractable text found.
+  Run OCR for documents that contain scanned text. Use `--allow-no-text` for intentionally text-free PDFs.
 
 ### `validate.py` — check a PDF against PDF/UA-1
 
@@ -111,6 +130,7 @@ NUTRIENT_PDF_PASSWORD="..." uv run <skill-dir>/scripts/validate.py --input /abs/
   `isValid`, writes the report to `--report` (default `<input-stem>-validation.json`), and prints
   each failed check with its occurrences.
 - Exit codes: 0 = passed machine validation; 3 = failed; 1 = error.
+  An incomplete or inconsistent API reply is an error and does not produce a validation verdict.
 - `--with-password` sends the password from `NUTRIENT_PDF_PASSWORD` in the
   `pspdfkit-pdf-password` header. A `403` means the password is missing or wrong, or the key isn't
   enabled for the Accessibility API.
@@ -183,8 +203,9 @@ example, changing the first heading from H1 to H3), so validate again after edit
   connected to is checked again, redirects are not followed, and the download is capped at
   150 MiB and 300 seconds. The Nutrient backend never fetches the URL. Do not pass unsanitized
   user-controlled strings to `--url`.
-- Outputs (tagged PDFs, reports) are written with `0600` permissions, never through a symlink,
-  never over the input, and never over an existing file without `--overwrite`.
+- Outputs (tagged PDFs, reports) use `0600` permissions on POSIX. On Windows, use a destination
+  with suitable access controls. The scripts never write through a destination symlink or over
+  the input, and replace an existing output only with `--overwrite`.
 
 ## Reference map
 

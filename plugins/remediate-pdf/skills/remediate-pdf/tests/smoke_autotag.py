@@ -28,6 +28,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from unittest import SkipTest
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[5]
@@ -100,8 +101,7 @@ def test_bundled_verifier_in_sync_with_make_pdf():
 # --- live smoke (requires NUTRIENT_ACCESSIBILITY_API_KEY) ------------------------------------
 def test_live_autotag():
     if not os.environ.get("NUTRIENT_ACCESSIBILITY_API_KEY"):
-        print("SKIP test_live_autotag (NUTRIENT_ACCESSIBILITY_API_KEY not set)")
-        return
+        raise SkipTest("NUTRIENT_ACCESSIBILITY_API_KEY not set")
     out = "/tmp/smoke-at-tagged.pdf"
     r = subprocess.run(
         ["uv", "run", "scripts/autotag.py", "--input", "tests/fixtures/sample.pdf", "--output", out],
@@ -119,12 +119,17 @@ def test_live_autotag():
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0
+    skipped = 0
     for fn in fns:
         try:
             fn()
             print(f"PASS {fn.__name__}")
+        except SkipTest as e:
+            skipped += 1
+            print(f"SKIP {fn.__name__}: {e}")
         except Exception as e:  # noqa: BLE001
             failed += 1
             print(f"FAIL {fn.__name__}: {type(e).__name__}: {e}")
-    print(f"\n{len(fns) - failed}/{len(fns)} passed")
+    executed = len(fns) - skipped
+    print(f"\n{executed - failed}/{executed} passed, {skipped} skipped")
     sys.exit(1 if failed else 0)

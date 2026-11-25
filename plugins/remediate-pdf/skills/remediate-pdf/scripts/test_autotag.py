@@ -8,16 +8,24 @@ paths exit before httpx/pypdf import) to confirm fail-fast behavior.
 Run: `python3 test_autotag.py`
 """
 
+import asyncio
+import io
 import os
 import subprocess
 import sys
 import tempfile
+from contextlib import redirect_stderr
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+import httpx
 
 sys.path.insert(0, str(Path(__file__).parent))
 import autotag as A  # noqa: E402
 
 SCRIPT = Path(__file__).parent / "autotag.py"
+FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "sample.pdf"
 REAL_BUILD_STATS = (
     '{"output":{"type":"pdfua","format":"pdf","page_count":1,"size_bytes":17728},'
     '"required_license_features":{"pdf_to_pdfua_api":{"units":1}}}'
@@ -176,6 +184,19 @@ def test_check_output_path_refuses_overwrite_input_and_existing():
         A.check_output_path(Path(d) / "new" / "o.pdf", src, False)  # creates the directory
 
 
+def test_check_output_path_refuses_alias_of_input():
+    with tempfile.TemporaryDirectory() as d:
+        src = Path(d) / "doc.pdf"
+        src.write_bytes(b"%PDF-1.4")
+        alias = Path(d) / "other-name.pdf"
+        os.link(src, alias)
+        try:
+            A.check_output_path(alias, src, overwrite=True)
+            assert False, "expected rejection for another name for the same input"
+        except ValueError as e:
+            assert "would overwrite the input" in str(e)
+
+
 def test_write_private_resets_mode_and_refuses_existing():
     with tempfile.TemporaryDirectory() as d:
         out = Path(d) / "o.pdf"
@@ -187,7 +208,36 @@ def test_write_private_resets_mode_and_refuses_existing():
         except FileExistsError:
             pass
         A.write_private(out, b"new", overwrite=True)
-        assert out.read_bytes() == b"new" and (out.stat().st_mode & 0o777) == 0o600
+        assert out.read_bytes() == b"new"
+        if os.name != "nt":
+            assert (out.stat().st_mode & 0o777) == 0o600
+
+
+def test_write_private_without_unix_only_file_apis():
+    portable_os = SimpleNamespace(**{
+        name: value for name, value in vars(os).items()
+        if name not in {"O_NOFOLLOW", "fchmod"}
+    })
+    with tempfile.TemporaryDirectory() as d, patch.object(A, "os", portable_os):
+        out = Path(d) / "output.pdf"
+        A.write_private(out, b"first\r\n", overwrite=False)
+        assert out.read_bytes() == b"first\r\n"
+        A.write_private(out, b"second\r\n", overwrite=True)
+        assert out.read_bytes() == b"second\r\n"
+
+
+def test_write_private_preserves_existing_output_if_replace_fails():
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d) / "output.pdf"
+        out.write_bytes(b"original")
+        with patch.object(os, "replace", side_effect=PermissionError("destination is busy")):
+            try:
+                A.write_private(out, b"replacement", overwrite=True)
+                assert False, "expected PermissionError"
+            except PermissionError:
+                pass
+        assert out.read_bytes() == b"original"
+        assert list(Path(d).iterdir()) == [out]
 
 
 # --- CLI error paths (subprocess, plain python3) --------------------------------------------
@@ -250,19 +300,74 @@ def test_nutrient_api_key_fallback_is_accepted():
 
 
 def test_scan_without_text_layer_exits_4():
-    try:
-        from pypdf import PdfWriter
-    except ImportError:
-        print("SKIP test_scan_without_text_layer_exits_4 (pypdf not installed)")
-        return
+    from pypdf import PdfWriter
+
     with tempfile.TemporaryDirectory() as d:
         scan = Path(d) / "scan.pdf"
-        w = PdfWriter()
-        w.add_blank_page(612, 792)
-        with open(scan, "wb") as f:
-            w.write(f)
-        r = _run(["--input", str(scan)], {"NUTRIENT_ACCESSIBILITY_API_KEY": "k"})
-        assert r.returncode == 4 and "ocr.py" in r.stderr
+        output = Path(d) / "new" / "tagged.pdf"
+        for pages in (A.DEFAULT_CONFIRM_OVER + 1, 1):
+            writer = PdfWriter()
+            for _ in range(pages):
+                writer.add_blank_page(612, 792)
+            writer.write(scan)
+            argv = ["autotag.py", "--input", str(scan), "--output", str(output)]
+            stderr = io.StringIO()
+            with (
+                patch.dict(os.environ, {"NUTRIENT_ACCESSIBILITY_API_KEY": "review_dummy"}),
+                patch.object(sys, "argv", argv),
+                patch.object(sys.stdin, "isatty", return_value=False),
+                patch.object(httpx, "AsyncClient", side_effect=AssertionError("unexpected HTTP client")),
+                redirect_stderr(stderr),
+            ):
+                try:
+                    asyncio.run(A.main())
+                    assert False, "expected a CLI exit"
+                except SystemExit as e:
+                    assert e.code == 4 and "ocr.py" in stderr.getvalue()
+            assert not output.parent.exists()
+
+
+def test_pdf_with_text_after_blank_front_matter_does_not_require_ocr():
+    from pypdf import PdfWriter
+
+    with tempfile.TemporaryDirectory() as d:
+        pdf = Path(d) / "late-text.pdf"
+        writer = PdfWriter()
+        for _ in range(3):
+            writer.add_blank_page(612, 792)
+        writer.append(FIXTURE)
+        writer.write(pdf)
+        assert A.has_text_layer(pdf) is True
+
+
+def test_downloaded_scan_is_rejected_before_upload():
+    from pypdf import PdfWriter
+
+    scan = io.BytesIO()
+    writer = PdfWriter()
+    writer.add_blank_page(612, 792)
+    writer.write(scan)
+    url = "https://93.184.216.34/scan.pdf"
+    fetch = AsyncMock(return_value=(scan.getvalue(), "scan.pdf"))
+    with tempfile.TemporaryDirectory() as d:
+        output = Path(d) / "tagged.pdf"
+        argv = ["autotag.py", "--url", url, "--output", str(output), "--yes"]
+        client = AsyncMock()
+        with (
+            patch.dict(os.environ, {"NUTRIENT_ACCESSIBILITY_API_KEY": "review_dummy"}),
+            patch.object(sys, "argv", argv),
+            patch.object(A, "fetch_remote_pdf", fetch),
+            patch.object(httpx, "AsyncClient", return_value=client),
+            redirect_stderr(io.StringIO()),
+        ):
+            try:
+                asyncio.run(A.main())
+                assert False, "expected a CLI exit"
+            except SystemExit as e:
+                assert e.code == 4
+        fetch.assert_awaited_once()
+        client.__aenter__.return_value.post.assert_not_awaited()
+        assert not output.exists()
 
 
 def test_existing_output_refused_before_any_call():
@@ -271,11 +376,10 @@ def test_existing_output_refused_before_any_call():
     except ImportError:
         print("SKIP test_existing_output_refused_before_any_call (pypdf not installed)")
         return
-    fixture = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "sample.pdf"
     with tempfile.TemporaryDirectory() as d:
         out = Path(d) / "o.pdf"
         out.write_bytes(b"x")
-        r = _run(["--input", str(fixture), "--output", str(out), "--yes"],
+        r = _run(["--input", str(FIXTURE), "--output", str(out), "--yes"],
                  {"NUTRIENT_ACCESSIBILITY_API_KEY": "k"})
         assert r.returncode == 1 and "--overwrite" in r.stderr
 

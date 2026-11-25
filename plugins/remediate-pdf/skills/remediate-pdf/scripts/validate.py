@@ -59,6 +59,21 @@ def is_conformant(report: dict) -> bool:
     return report.get("isValid") is True
 
 
+def is_validation_report(report: object) -> bool:
+    """Check that a successful HTTP response contains a document verdict and report."""
+    if not isinstance(report, dict) or not isinstance(report.get("isValid"), bool):
+        return False
+    details = report.get("validationReport")
+    if not isinstance(details, dict):
+        return False
+    checks = details.get("failedChecks")
+    return (
+        isinstance(checks, list)
+        and all(isinstance(check, dict) for check in checks)
+        and report["isValid"] == (not checks)
+    )
+
+
 def summarize_report(report: dict, name: str) -> str:
     """Plain-language summary of a validate_pdfua report for the agent to relay to the user."""
     vr = report.get("validationReport") or {}
@@ -202,9 +217,15 @@ async def main() -> None:
               + redact(resp.text[:500], key, password), file=sys.stderr)
         sys.exit(EXIT_ERROR)
 
+    if not is_validation_report(report):
+        print("Error: the API returned an incomplete or inconsistent PDF/UA-1 validation report.",
+              file=sys.stderr)
+        sys.exit(EXIT_ERROR)
+
+    summary = summarize_report(report, file_name)
     write_private(report_path, json.dumps(report, indent=2).encode("utf-8"), args.overwrite)
     print(f"Wrote {report_path}")
-    print(summarize_report(report, file_name))
+    print(summary)
     sys.exit(EXIT_PASSED if is_conformant(report) else EXIT_FAILED)
 
 

@@ -35,7 +35,9 @@ for its usage note.
 
 **Image-only scans:** auto-tagging doesn't add a text layer; it structures the text it finds. A
 scan without OCR has no readable text to tag, and validation won't catch that, so run OCR first
-(`document-processor-api`'s `ocr.py`). `autotag.py` exits 4 when the first pages have no text.
+(`document-processor-api`'s `ocr.py`). `autotag.py` exits 4 only when it finds no extractable
+text in the PDF. When a PDF mixes digital text and scanned pages, check the scanned pages
+separately before tagging.
 
 ## Validation endpoint
 
@@ -47,7 +49,8 @@ scan without OCR has no readable text to tag, and validation won't catch that, s
   non-ASCII characters can't break the header.
 - **Profile:** PDF/UA-1 is the only supported profile.
 - **Result:** a completed validation returns **HTTP 200 whether or not the PDF conforms**. Read
-  `isValid` in the body.
+  `isValid` in the body. The CLI requires a matching report with a failed-check list before it
+  issues a document verdict.
 
 Report fields:
 
