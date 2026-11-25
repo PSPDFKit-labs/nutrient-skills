@@ -19,3 +19,16 @@ Each skill lives under `plugins/<plugin-name>/skills/<skill-name>/SKILL.md`. Rea
 - **pdf-to-text / pdf-to-text** — Extract text from PDFs as layout-preserving plain text. Use when the consumer wants raw text only, when columns and tables must stay spatially aligned, or when downstream tooling can't parse Markdown. Prefer `pdf-to-markdown` when the consumer benefits from semantic structure.
 - **query / query** — Find the most relevant passages in an already-extracted document (the output of `pdf-to-markdown` / `pdf-to-text`) with ranked BM-25 search that returns only the top line windows. Use to answer a question or pull a section from a large converted file without reading it all back into context.
 - **nutrient-sdk-dev** — Building with a Nutrient SDK. 14 skills: `nutrient-sdk`, which routes document work to the right SDK and explains licensing and trial mode, and one per SDK family: `nutrient-web-sdk`, `nutrient-document-authoring`, `nutrient-ios-sdk`, `nutrient-android-sdk`, `nutrient-react-native-sdk`, `nutrient-flutter-sdk`, `nutrient-maui-sdk`, `nutrient-python-sdk`, `nutrient-java-server-sdk`, `nutrient-nodejs-server-sdk`, `nutrient-dotnet-server-sdk`, `nutrient-document-engine`, `nutrient-ai-assistant`. Each points to the right nutrient.io API/guide URLs and example repos for that SDK.
+
+## Changing a plugin
+
+Bump the plugin's version in the same pull request as any change to its skills or other shipped files. Claude Code decides whether an installed plugin is current by its version number, not its content. A change merged without a bump never reaches existing installs: `claude plugin update` reports "already at the latest version".
+
+Change the version in each place it is recorded, and keep them equal:
+
+- `plugins/<plugin>/.claude-plugin/plugin.json`
+- `plugins/<plugin>/.codex-plugin/plugin.json`
+- the plugin's entry in `.claude-plugin/marketplace.json`
+- `PLUGIN_VERSIONS` in `scripts/validate-pdf-cli-skills.py`, for `pdf-to-markdown`, `pdf-to-text`, and `query`
+
+Add a line to `CHANGELOG.md` that names the plugin and the new version. Changes to `README.md`, `AGENTS.md`, `CHANGELOG.md`, or CI alone do not need a bump.
