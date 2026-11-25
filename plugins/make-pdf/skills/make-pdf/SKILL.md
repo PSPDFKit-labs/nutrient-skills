@@ -1,6 +1,6 @@
 ---
 name: make-pdf
-description: Generate finished PDFs from Markdown or HTML via the Nutrient DWS Build API - single files or whole directories - with compliance-grade output options (accessible PDF/UA, archival PDF/A, text watermarks) and built-in conformance verification. Use when the user asks to make, generate, export, or batch-convert PDFs from Markdown, HTML, notes, or reports, especially when PDFs must be accessible (PDF/UA, WCAG/ADA/EAA), archival (PDF/A), or watermarked - or to check whether an existing PDF carries valid PDF/UA or PDF/A markers. For processing an existing PDF (sign, redact, OCR, merge), use document-processor-api instead.
+description: Generate finished PDFs from Markdown or HTML via the Nutrient DWS Build API - single files or whole directories - with compliance-grade output options (accessible PDF/UA, archival PDF/A, text watermarks) and built-in conformance verification. Use when the user asks to make, generate, export, or batch-convert PDFs from Markdown, HTML, notes, or reports, especially when PDFs must be accessible (PDF/UA, WCAG/ADA/EAA), archival (PDF/A), or watermarked, or to check PDF/A markers on an existing PDF. For accessibility or PDF/UA-1 checks on an existing PDF, use remediate-pdf. For signing, redaction, OCR, or merging, use document-processor-api.
 ---
 
 # Nutrient Make PDF
@@ -52,10 +52,10 @@ Two assurance levels, and be honest about which one ran:
 - **Structural checks** (always available, via `scripts/verify-pdf.py`): the PDF/UA-1 claim marker (`pdfuaid` XMP part 1 — PDF/UA-2 documents are out of scope), tagged-structure signals (`MarkInfo`, `StructTreeRoot`), language, `DisplayDocTitle`, and a non-empty document title — or the PDF/A identification (`pdfaid` part + conformance, matched against the requested level). These catch real failures but are **not a full conformance audit**.
 - **Full audit** (optional): if `verapdf` is installed on PATH, the verifier also runs veraPDF for a genuine conformance validation and reports its verdict. Recommend installing veraPDF when the user's requirement is regulatory (ADA/EAA deadlines, records retention).
 
-The verifier also works standalone on any PDF, including ones this skill did not create:
+Use the standalone verifier for an existing PDF/A file. For a PDF/UA-1 check on an existing PDF,
+use `remediate-pdf`'s `validate.py`. That skill also bundles `verify-pdf.py` for offline inspection.
 
 ```bash
-uv run scripts/verify-pdf.py --input existing.pdf --profile pdfua
 uv run scripts/verify-pdf.py --input archive-dir/ --profile pdfa --pdfa-level pdfa-2b
 ```
 
@@ -81,7 +81,8 @@ DWS renders HTML with headless Chromium (`printToPDF`). That means standard prin
 Generation is one step. Related operations live in sibling plugins from the same marketplace:
 
 - Sign, redact, or merge the produced PDF: the `document-processor-api` skill — `/plugin install nutrient-dws@nutrient-skills`. Its scripts read the same `NUTRIENT_API_KEY`; run them from that skill's own directory, e.g. `uv run scripts/sign.py --input report.pdf --out report-signed.pdf`.
-- Make an EXISTING PDF accessible (auto-tag for PDF/UA): the `remediate-pdf` skill — `/plugin install remediate-pdf@nutrient-skills`. This skill generates new PDFs; that one fixes old ones (and bundles the same `verify-pdf.py`).
+- Check or improve the accessibility of an existing PDF with the `remediate-pdf` skill
+  (`/plugin install remediate-pdf@nutrient-skills`).
 
 ## Implementation Rules
 
