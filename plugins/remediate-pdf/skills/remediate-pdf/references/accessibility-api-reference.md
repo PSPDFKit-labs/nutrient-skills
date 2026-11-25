@@ -1,22 +1,28 @@
-# DWS Accessibility API Reference
+# Nutrient Accessibility API Reference
 
-Confirmed facts and probe findings for the Nutrient DWS Accessibility API, as used by
-`autotag.py`. Endpoint behavior below was confirmed by live probe on 2026-06-22.
+Facts for `autotag.py` and `validate.py`. Auto-tagging behavior was confirmed by live probe on
+2026-06-22; validation was confirmed by live calls on 2026-11-19 and 2026-11-25 and against the DWS
+Accessibility validation guide.
 
-## Auto-tagging endpoint (confirmed)
+## Authentication and keys
+
+- `Authorization: Bearer <key>`. Keys use the **`pdf_live_` prefix**.
+- On current plans (unified USD billing, from 2026-11-16), **one Nutrient account and key cover
+  the Accessibility API and the Processor API**. The scripts read `NUTRIENT_ACCESSIBILITY_API_KEY`,
+  falling back to `NUTRIENT_API_KEY`, and strip surrounding whitespace.
+- Older accounts created before unified billing had separate per-product keys; on those, a
+  Processor key returns `401` on `/accessibility/*` and an Accessibility key may not work on
+  `/build`. If a call returns `401`, check which key the account issued for that API.
+
+## Auto-tagging endpoint
 
 - **`POST https://api.nutrient.io/accessibility/autotag`**
-- **Auth:** `Authorization: Bearer <key>`. The key is product-specific
-  (`NUTRIENT_ACCESSIBILITY_API_KEY`) and uses the **`pdf_live_` prefix** (OQ1, confirmed). A
-  missing/empty key → `401`; a wrong-product (Processor/Extraction) key → `401`.
-- **Input:** local file as `multipart/form-data` with field name `file`; or a remote PDF as a
-  JSON body `{"file": {"url": "https://..."}}`.
-- **Output:** the remediated PDF binary, `Content-Type: application/pdf`.
+- **Input:** local file as `multipart/form-data`, field `file`.
+- **Output:** the tagged PDF binary, `Content-Type: application/pdf`. The original file is not
+  modified.
 - **Max file size:** 150 MiB per request (enforced client-side before upload).
 
-### Quota / usage (R14, OQ2 — resolved)
-
-The response surfaces usage in the **`x-pspdfkit-build-stats`** response header (JSON), e.g.:
+The response surfaces usage in the **`x-pspdfkit-build-stats`** header (JSON), for example:
 
 ```json
 {"output":{"type":"pdfua","format":"pdf","page_count":1,"size_bytes":17728},
@@ -25,49 +31,102 @@ The response surfaces usage in the **`x-pspdfkit-build-stats`** response header 
 ```
 
 `autotag.py` reads `output.page_count` and `required_license_features.pdf_to_pdfua_api.units`
-for its quota-consumption note. Quota model: auto-tagging draws from the monthly
-auto-tagged-pages bucket (Free tier = 20 pages/month; no rollover; the API blocks at the limit).
+for its usage note.
 
-### Error envelope (OQ4 — resolved)
+**Image-only scans:** auto-tagging doesn't add a text layer; it structures the text it finds. A
+scan without OCR has no readable text to tag, and validation won't catch that, so run OCR first
+(`document-processor-api`'s `ocr.py`). `autotag.py` exits 4 only when it finds no extractable
+text in the PDF. When a PDF mixes digital text and scanned pages, check the scanned pages
+separately before tagging.
 
-Non-2xx responses return:
+## Validation endpoint
+
+- **`POST https://api.nutrient.io/accessibility/validate_pdfua`**
+- **Input:** exactly one source, either a local file as multipart field `file` or a remote PDF as
+  multipart field `url`. `validate.py` always uploads the file (it fetches `--url` client-side).
+- **Password-protected PDFs:** send the password in the `pspdfkit-pdf-password` header, plain or
+  as `base64:<encoded-password>`. `validate.py` always sends the base64 form, so spaces and
+  non-ASCII characters can't break the header.
+- **Profile:** PDF/UA-1 is the only supported profile.
+- **Result:** a completed validation returns **HTTP 200 whether or not the PDF conforms**. Read
+  `isValid` in the body. The CLI requires a matching report with a failed-check list before it
+  issues a document verdict.
+
+Report fields:
+
+- `isValid` — `true` if the PDF conforms to PDF/UA-1.
+- `conformance` — `pdfua-1` if it conforms, otherwise `none`.
+- `validationReport.profile` — the profile used (`{"conformance": "pdfua", "part": 1}`).
+- `validationReport.result` — `isCompliant` and a `statement` summarizing the result.
+- `validationReport.failureCount` — total failures across all failed checks.
+- `validationReport.failedChecks` — one entry per failed requirement, with its `id`,
+  `occurrenceCount`, and `occurrences`. Each occurrence has a `context` (`Document`, `Page`), the
+  affected PDF object in `objectReference`, and a `statement` describing the failure. Empty when
+  the PDF conforms. Check IDs are descriptive names such as `MissingDocumentTitle`,
+  `InvalidLangEntry`, and `UnembeddedFont`, not PDF/UA clause numbers. Document-level failures
+  carry a placeholder `objectReference` (`"None"` or `"0 obj"`).
+
+A failing report for an untagged one-page PDF (live, 2026-11-25) is in
+`tests/fixtures/validation-failing.json`: 8 failures across 7 checks, including a missing
+structure tree, language, title, XMP metadata, MarkInfo, ViewerPreferences, and unembedded
+fonts.
+
+A passing report, as returned by the live API:
 
 ```json
-{"error":{"details":"Forbidden","requestId":"...","status":403,"supportUrl":"https://www.nutrient.io/api/support/"}}
+{"conformance":"pdfua-1","isValid":true,
+ "validationReport":{"failedChecks":[],"failureCount":0,
+  "profile":{"conformance":"pdfua","part":1},
+  "result":{"isCompliant":true,"statement":"PDF file is compliant with validation profile requirements."}}}
 ```
 
-Observed status codes: `200` success (`application/pdf`); `401` missing/invalid auth; `403`
-forbidden — **also the gateway's catch-all for unrecognized POST routes** (see below).
-`autotag.py` redacts the API key from any error body before printing.
+The API report checks what a machine can test. It confirms that an image has alternative text,
+not that the text describes the image, so placeholder alt text such as "image" passes.
+Accessibility Studio's validation warns about placeholder alt text.
 
-## Validation endpoint (OQ3 — resolved: does not exist yet)
+### History
 
-A live probe on 2026-06-22 found **no dedicated accessibility conformance-validation endpoint**:
+A June 2026 probe found no validation route (`/accessibility/validate` and `/accessibility/check`
+returned the gateway's catch-all `403`), so version 1.0 of this skill shipped auto-tag-only.
 
-- `POST /accessibility/validate` → `403`, **byte-identical to a nonsense path**
-  (`POST /accessibility/definitely-not-real-xyz` → the same `403`). The gateway returns `403`
-  (not `404`) for unrecognized POST routes, so the `403` means *route-absent*, not an auth/scope
-  problem — the same key auto-tags successfully, and a no-auth call returns `401`, not `403`.
-- `POST /accessibility/check` → same `403`.
-- Validation is **not a mode of autotag**: `validate=true`, `mode=validate`, `output_type=report`
-  form fields and `Accept: application/json` all still return `200 application/pdf`.
-- The Processor's `validate_pdfa` is a different product/key, not the Accessibility API.
+## Preparation through the Processor API
 
-**Decision (R17):** the skill ships **auto-tag-only**; conformance validation is marked "coming
-soon." When a validation endpoint ships, add `validate.py` and re-enable validation routing.
+Conversion and OCR run on `/build` through the `document-processor-api` skill (`convert.py`,
+`ocr.py`), with the same key. On the free plan, Processor output is watermarked until the account
+adds a wallet, and auto-tagging tags the watermark as page content.
 
-## Premise note (P1) — same engine as the Processor
+## Errors
 
-The autotag response's `x-pspdfkit-build-stats` reports `output.type: "pdfua"`,
-`conversion_engine: "gdpicture"`, and `required_license_features.pdf_to_pdfua_api` — the same
-engine and license feature the Processor's `/build` PDF/UA output target uses. So
-`/accessibility/autotag` is the **Accessibility-product surface over the same `pdf_to_pdfua`
-engine**, not a distinct capability. Disambiguation between this skill and `document-processor-api`
-is therefore about **product / key / quota / dashboard** (and the forthcoming validator), not
-about which one "can auto-tag." The SKILL.md disambiguation reflects this.
+| Status | Meaning |
+| --- | --- |
+| 400 | No source, more than one source, or invalid parameters |
+| 401 | The API key is missing or invalid |
+| 402 | The account has no usage left (monthly usage and wallet) |
+| 403 | Validation: the PDF password is missing or incorrect, or the key isn't enabled for the Accessibility API. Unknown routes also return `403` |
+| 408 | The request timed out |
+| 413 | The file exceeds the maximum upload size |
+| 502 | The PDF couldn't be downloaded from the supplied URL |
 
-## Open questions remaining
+Error bodies follow `{"error":{"details":"...","requestId":"...","status":403,"supportUrl":"..."}}`;
+for validation `400`, `403`, and `502`, the body has a machine-readable `reason` (for example
+`missing_source_file`, `password_required`) and a `description`. The scripts redact the API key
+and PDF password from any error before printing.
 
-- **OQ5** — PDF/UA-1 (ISO 14289-1) vs PDF/UA-2 target version: the build stats report
-  `type: "pdfua"` without a version; not resolved. See `pdf-ua-wcag-compliance-notes.md`.
-- **OQ6** — WCAG version/level the output aligns to: not resolved.
+## Pricing
+
+Unified USD pricing from 2026-11-16: auto-tagging is billed per page and validation per
+validation, from the account's monthly usage and then the prepay wallet. The free plan includes
+$5 of usage a month. Editing tags in Accessibility Studio is free. Current rates:
+<https://www.nutrient.io/api/pricing/>.
+
+## Same engine as the Processor
+
+The autotag build stats report `output.type: "pdfua"`, `conversion_engine: "gdpicture"`, and
+`required_license_features.pdf_to_pdfua_api` — the same engine and license feature as the
+Processor's `/build` PDF/UA output target. The difference between this skill and
+`document-processor-api` is the API surface (auto-tagging plus validation), not tagging quality.
+
+## Not documented
+
+- Nutrient doesn't document a WCAG version or level that auto-tagged output aligns to. PDF/UA-1 is
+  the validated target.

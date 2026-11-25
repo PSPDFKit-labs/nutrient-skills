@@ -1,0 +1,99 @@
+{
+  "conformance": "none",
+  "isValid": false,
+  "validationReport": {
+    "failedChecks": [
+      {
+        "id": "MissingViewerPreferencesEntry",
+        "occurrenceCount": 1,
+        "occurrences": [
+          {
+            "context": "Document",
+            "objectReference": "0 obj",
+            "statement": "ViewerPreferences dictionary is required by PDF/UA-1 but is missing."
+          }
+        ]
+      },
+      {
+        "id": "InvalidLangEntry",
+        "occurrenceCount": 1,
+        "occurrences": [
+          {
+            "context": "Document",
+            "objectReference": "None",
+            "statement": "Document catalog contains missing or invalid Lang entry: (empty)"
+          }
+        ]
+      },
+      {
+        "id": "InvalidStructType",
+        "occurrenceCount": 1,
+        "occurrences": [
+          {
+            "context": "Document",
+            "objectReference": "0 obj",
+            "statement": "7.1-t11: Document does not contain a StructTreeRoot."
+          }
+        ]
+      },
+      {
+        "id": "MissingXMPMetadata",
+        "occurrenceCount": 1,
+        "occurrences": [
+          {
+            "context": "Document",
+            "objectReference": "None",
+            "statement": "Document XMP metadata is missing."
+          }
+        ]
+      },
+      {
+        "id": "MissingDocumentTitle",
+        "occurrenceCount": 1,
+        "occurrences": [
+          {
+            "context": "Document",
+            "objectReference": "0 obj",
+            "statement": "Document title is required by PDF/UA-1 as a non-empty dc:title entry in the XMP metadata but is missing."
+          }
+        ]
+      },
+      {
+        "id": "MissingMarkInfoDictionary",
+        "occurrenceCount": 1,
+        "occurrences": [
+          {
+            "context": "Document",
+            "objectReference": "None",
+            "statement": "MarkInfo dictionary is missing."
+          }
+        ]
+      },
+      {
+        "id": "UnembeddedFont",
+        "occurrenceCount": 2,
+        "occurrences": [
+          {
+            "context": "Page",
+            "objectReference": "3 0 obj",
+            "statement": "The font is not embedded."
+          },
+          {
+            "context": "Page",
+            "objectReference": "2 0 obj",
+            "statement": "The font is not embedded."
+          }
+        ]
+      }
+    ],
+    "failureCount": 8,
+    "profile": {
+      "conformance": "pdfua",
+      "part": 1
+    },
+    "result": {
+      "isCompliant": false,
+      "statement": "PDF file is not compliant with validation profile requirements."
+    }
+  }
+}
