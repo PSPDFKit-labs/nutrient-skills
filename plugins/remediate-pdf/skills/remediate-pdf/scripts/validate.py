@@ -81,7 +81,10 @@ def summarize_report(report: dict, name: str) -> str:
         label = first or check.get("id") or "Unnamed check"
         lines.append(f"- {label} ({n} occurrence(s), check {check.get('id', 'unknown')})")
         for occ in occurrences[:MAX_LISTED_OCCURRENCES]:
-            where = occ.get("objectReference") or occ.get("context")
+            # Document-level failures carry a placeholder reference ("None" or "0 obj"); the
+            # context ("Document", "Page") says more there.
+            ref = occ.get("objectReference")
+            where = ref if ref and ref not in ("None", "0 obj") else occ.get("context")
             if where:
                 lines.append(f"    at {where}")
         if len(occurrences) > MAX_LISTED_OCCURRENCES:

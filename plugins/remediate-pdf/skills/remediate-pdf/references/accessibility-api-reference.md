@@ -1,8 +1,8 @@
 # Nutrient Accessibility API Reference
 
 Facts for `autotag.py` and `validate.py`. Auto-tagging behavior was confirmed by live probe on
-2026-06-22; validation was confirmed by live calls on 2026-11-19 and against the DWS Accessibility
-validation guide.
+2026-06-22; validation was confirmed by live calls on 2026-11-19 and 2026-11-25 and against the DWS
+Accessibility validation guide.
 
 ## Authentication and keys
 
@@ -57,8 +57,16 @@ Report fields:
 - `validationReport.result` — `isCompliant` and a `statement` summarizing the result.
 - `validationReport.failureCount` — total failures across all failed checks.
 - `validationReport.failedChecks` — one entry per failed requirement, with its `id`,
-  `occurrenceCount`, and `occurrences`. Each occurrence has a `context`, the affected PDF object in
-  `objectReference`, and a `statement` describing the failure. Empty when the PDF conforms.
+  `occurrenceCount`, and `occurrences`. Each occurrence has a `context` (`Document`, `Page`), the
+  affected PDF object in `objectReference`, and a `statement` describing the failure. Empty when
+  the PDF conforms. Check IDs are descriptive names such as `MissingDocumentTitle`,
+  `InvalidLangEntry`, and `UnembeddedFont`, not PDF/UA clause numbers. Document-level failures
+  carry a placeholder `objectReference` (`"None"` or `"0 obj"`).
+
+A failing report for an untagged one-page PDF (live, 2026-11-25) is in
+`tests/fixtures/validation-failing.json`: 8 failures across 7 checks, including a missing
+structure tree, language, title, XMP metadata, MarkInfo, ViewerPreferences, and unembedded
+fonts.
 
 A passing report, as returned by the live API:
 

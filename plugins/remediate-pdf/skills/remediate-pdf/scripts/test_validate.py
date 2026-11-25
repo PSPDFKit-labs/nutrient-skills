@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Unit + CLI error-path tests for validate.py (no API key or network needed).
 
-PASSING_REPORT is a real /accessibility/validate_pdfua response captured from the live API.
-FAILING_REPORT follows the documented report schema (failedChecks entries with id,
-occurrenceCount, and occurrences carrying context, objectReference, and statement), with veraPDF
-PDF/UA-1 check IDs; replace it with a captured failing response when one is available.
+PASSING_REPORT and FAILING_REPORT are real /accessibility/validate_pdfua responses captured from
+the live API (FAILING_REPORT is tests/fixtures/validation-failing.json, the untagged sample.pdf).
 
 Run: `python3 test_validate.py` (Python 3.10+)
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -34,40 +33,10 @@ PASSING_REPORT = {
     },
 }
 
-FAILING_REPORT = {
-    "conformance": "none",
-    "isValid": False,
-    "validationReport": {
-        "failureCount": 4,
-        "profile": {"conformance": "pdfua", "part": 1},
-        "result": {
-            "isCompliant": False,
-            "statement": "PDF file is not compliant with validation profile requirements.",
-        },
-        "failedChecks": [
-            {
-                "id": "7.18.1-2",
-                "occurrenceCount": 3,
-                "occurrences": [
-                    {"context": "root/document[0]/pages[0]/annots[0]", "objectReference": "12 0 R",
-                     "statement": "An annotation has no description."},
-                    {"context": "root/document[0]/pages[0]/annots[1]", "objectReference": "13 0 R",
-                     "statement": "An annotation has no description."},
-                    {"context": "root/document[0]/pages[0]/annots[2]", "objectReference": "14 0 R",
-                     "statement": "An annotation has no description."},
-                ],
-            },
-            {
-                "id": "7.1-9",
-                "occurrenceCount": 1,
-                "occurrences": [
-                    {"context": "root/document[0]/metadata[0]", "objectReference": "1 0 R",
-                     "statement": "The document has no title in its metadata."},
-                ],
-            },
-        ],
-    },
-}
+# A real failing response: the untagged tests/fixtures/sample.pdf, validated on 2026-11-25.
+FAILING_REPORT = json.loads(
+    (Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "validation-failing.json").read_text()
+)
 
 
 def test_conformant_only_when_isvalid_true():
@@ -86,10 +55,12 @@ def test_summary_pass():
 def test_summary_fail_lists_checks_and_counts():
     s = V.summarize_report(FAILING_REPORT, "doc.pdf")
     assert "failed PDF/UA-1 validation" in s
-    assert "4 failure(s) across 2 check(s)" in s
-    assert "An annotation has no description. (3 occurrence(s), check 7.18.1-2)" in s
-    assert "The document has no title in its metadata." in s
-    assert "12 0 R" in s
+    assert "8 failure(s) across 7 check(s)" in s
+    assert "The font is not embedded. (2 occurrence(s), check UnembeddedFont)" in s
+    assert "check MissingDocumentTitle" in s
+    assert "3 0 obj" in s                       # a real object reference is shown
+    assert "at None" not in s and "at 0 obj" not in s  # placeholders fall back to the context
+    assert "at Document" in s
 
 
 def test_summary_caps_listed_occurrences():
