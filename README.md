@@ -114,6 +114,35 @@ git clone https://github.com/pspdfkit-labs/nutrient-skills.git
 
 Reference `SKILL.md` directly in your agent's context, or symlink the skill directory into wherever your agent resolves skills.
 
+## Updating
+
+An existing install does not pick up a new version on its own. Update it with the tool you installed with.
+
+### Claude Code
+
+Refresh the marketplace first, then update the plugin:
+
+```bash
+claude plugin marketplace update nutrient-skills
+claude plugin update nutrient-sdk-dev@nutrient-skills
+```
+
+Repeat the second command for each plugin you installed, then restart Claude Code. The plugin update compares against your local copy of the marketplace, so if you skip the first command it reports that you are already on the latest version.
+
+Claude Code turns auto-update off by default for marketplaces other than Anthropic's own. To turn it on, run `/plugin`, open the Marketplaces tab, and enable auto-update for `nutrient-skills`.
+
+### Codex
+
+```bash
+codex plugin marketplace upgrade
+```
+
+### Skills CLI
+
+```bash
+npx skills update
+```
+
 ---
 
 ## Repository Layout

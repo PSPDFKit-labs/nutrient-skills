@@ -14,6 +14,7 @@ Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 
 ## Unreleased
 
+- README: added an Updating section with the commands that move an existing Claude Code, Codex, or Skills CLI install to the current version.
 - Android SDK skill: the trial dialog is followed by the app being killed 30 minutes later, and the Kotlin note now names 2.4.10 as the minimum, matching the system compatibility guide.
 - Added a Licensing section to the iOS and Android SDK skills (key call, trial mode, and what happens when the trial hour ends, checked by running each with no key), and a note on the Kotlin version Android SDK 12.1.0 needs.
 - Corrected the React Native skill's license call to the package's documented `Nutrient.setLicenseKeys` / `Nutrient.setLicenseKey`, and added `webLicenseKey` to the Flutter skill's `Nutrient.initialize`.
