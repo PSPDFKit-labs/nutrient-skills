@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-"""Live smoke test + auto-tag-only routing/content assertions for remediate-pdf.
+"""Live smoke test + routing/content assertions for remediate-pdf.
 
-This skill ships in the AUTO-TAG-ONLY variant (U7 gate decision: no DWS Accessibility validation
-endpoint exists yet). The content assertions below enforce that the skill does not advertise
-validation routing or carry an autotag->validate ordered-workflow recipe (R17). They run with no
-API key. The live smoke runs only when NUTRIENT_ACCESSIBILITY_API_KEY is set.
+Since 1.1 the skill covers auto-tagging, PDF/UA-1 validation (/accessibility/validate_pdfua), and
+preparation (conversion and OCR through the Processor API). The content assertions below check
+that validation and preparation are routed here, that WCAG is never used as a trigger or claim, and
+that the Studio-only fixes are handed off. They run with no API key. The live smoke runs only when
+NUTRIENT_ACCESSIBILITY_API_KEY is set.
 
 Routing expectations (this is the canonical routing record for the skill):
   MUST route to remediate-pdf:
     - "auto-tag this PDF for screen readers"
-    - "make this document accessible"
+    - "make this document accessible" / "make this Word file accessible"
     - "remediate this PDF for Section 508"
     - "tag this PDF for PDF/UA"
-  MUST NOT route here (auto-tag-only variant — no validation endpoint on this API):
-    - "validate PDF/UA compliance" / "check WCAG accessibility"   (route to make-pdf's verify-pdf.py)
+    - "validate PDF/UA" / "does this PDF pass PDF/UA?"
+    - "make this scanned PDF accessible"                         (prepare.py --ocr, then autotag)
+  MUST NOT route here:
     - "generate an accessible PDF from markdown"                  (route to make-pdf)
-  MUST NOT route here (belong to document-processor-api):
     - "convert this PDF to PDF/A", "produce a PDF/UA output via /build", "merge PDFs",
-      "sign this document"
+      "sign this document"                                        (document-processor-api)
 
 Run: `python3 smoke_autotag.py`
 """
@@ -42,25 +43,28 @@ def _frontmatter_description(md_text: str) -> str:
     return (m.group(1) if m else fm).lower()
 
 
-# --- R17: auto-tag-only — no validation routing, no ordered-workflow recipe ------------------
-def test_description_has_no_validation_trigger():
+# --- validation and preparation routing ----------------------------------------------------
+def test_description_routes_validation_but_not_wcag():
     desc = _frontmatter_description(SKILL_MD.read_text())
-    assert "validate" not in desc, "description must not advertise validation (auto-tag-only)"
-    assert "wcag" not in desc, "description must not use WCAG as a routing trigger here"
+    assert "validate" in desc, "description must route PDF/UA validation here"
+    assert "pdf/ua-1" in desc
+    assert "wcag" not in desc, "description must not use WCAG as a routing trigger"
 
 
-def test_no_autotag_then_validate_recipe():
-    body = SKILL_MD.read_text().lower()
-    for pat in [r"then\s+run\s+validate", r"then\s+validate", r"validate\.py\s+on\s+the",
-                r"autotag\.py\s+first,\s*then"]:
-        assert not re.search(pat, body), f"ordered-workflow recipe present: {pat!r}"
+def test_skill_documents_all_three_scripts_and_studio_handoff():
+    body = SKILL_MD.read_text()
+    for script in ["autotag.py", "validate.py", "prepare.py"]:
+        assert f"scripts/{script}" in body, f"{script} not documented"
+        assert (SKILL_DIR / "scripts" / script).is_file(), f"{script} missing"
+    assert "isValid" in body, "must tell agents to read isValid, not the HTTP status"
+    assert "Accessibility Studio" in body, "Studio-only fixes must be handed off"
 
 
-def test_registration_marks_autotag_only_with_verifier():
+def test_registration_lists_capabilities_and_verifier():
     for f in (README, AGENTS):
-        line = next(l for l in f.read_text().splitlines() if "remediate-pdf" in l)
-        assert "auto-tag" in line.lower(), f"{f.name}: auto-tag-only marker missing"
-        assert "verify" in line.lower(), f"{f.name}: verifier pointer missing"
+        line = next(l for l in f.read_text().splitlines() if "remediate-pdf" in l).lower()
+        for term in ["auto-tag", "validat", "ocr", "verify"]:
+            assert term in line, f"{f.name}: {term!r} missing from the remediate-pdf entry"
 
 
 # --- positive routing surface ---------------------------------------------------------------

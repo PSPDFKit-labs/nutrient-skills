@@ -14,6 +14,7 @@ Initial release of the AI Gateway skill in the `nutrient-dws` plugin (2.1.0).
 
 ## Unreleased
 
+- remediate-pdf 1.1.0: added `validate.py` (PDF/UA-1 validation through `/accessibility/validate_pdfua`, with the JSON report and a summary of every failed check) and `prepare.py` (Word, Excel, PowerPoint, text, and image to PDF, and OCR for scans, through the Processor API). `autotag.py` now warns when a PDF has no text layer. The skill routes PDF/UA validation requests, points to Accessibility Studio for fixes the API can't make (Repair, Remediation, reading order, placeholder alt text), and describes the unified plan: one key for both APIs, billed in USD from monthly usage and the wallet.
 - Android SDK skill: the trial dialog is followed by the app being killed 30 minutes later, and the Kotlin note now names 2.4.10 as the minimum, matching the system compatibility guide.
 - Added a Licensing section to the iOS and Android SDK skills (key call, trial mode, and what happens when the trial hour ends, checked by running each with no key), and a note on the Kotlin version Android SDK 12.1.0 needs.
 - Corrected the React Native skill's license call to the package's documented `Nutrient.setLicenseKeys` / `Nutrient.setLicenseKey`, and added `webLicenseKey` to the Flutter skill's `Nutrient.initialize`.

@@ -3,19 +3,18 @@
 # requires-python = ">=3.10"
 # dependencies = ["httpx>=0.27", "pypdf>=4.0"]
 # ///
-"""Auto-tag a PDF with PDF/UA semantic structure via the Nutrient DWS Accessibility API.
+"""Auto-tag a PDF with PDF/UA semantic structure via the Nutrient Accessibility API.
 
-POSTs to https://api.nutrient.io/accessibility/autotag (multipart for local files, JSON body
-for --url) and writes the remediated, tagged PDF to --output.
+POSTs to https://api.nutrient.io/accessibility/autotag (multipart, field `file`) and writes the
+remediated, tagged PDF to --output.
 
 Transport note: this calls the endpoint directly with httpx rather than through the nutrient-dws
-SDK — that SDK exposes no Accessibility method (see the skill's KD8). The DWS Accessibility API is
-a separate product with its own key (NUTRIENT_ACCESSIBILITY_API_KEY); a Processor or Extraction
-key returns 401. There is no silent fallback to NUTRIENT_API_KEY: a missing Accessibility key is a
-hard error so the failure is obvious rather than masked.
+SDK — that SDK exposes no Accessibility method (see the skill's KD8). The key is read from
+NUTRIENT_ACCESSIBILITY_API_KEY; on current plans, one Nutrient account and key cover the
+Accessibility API and the Processor API. A missing key is a hard error so the failure is obvious.
 
-Quota: auto-tagging consumes from the monthly auto-tagged-pages quota (Free tier = 20/month, no
-rollover). The script gates runs above --confirm-over (default 20) unless --yes is passed.
+Cost: auto-tagging is billed per page from the account's monthly usage, then the wallet. The
+script asks for confirmation above --confirm-over pages (default 20) unless --yes is passed.
 """
 
 import argparse
@@ -30,7 +29,7 @@ from urllib.parse import urlparse
 
 AUTOTAG_URL = "https://api.nutrient.io/accessibility/autotag"
 MAX_BYTES = 150 * 1024 * 1024  # 150 MiB
-DEFAULT_CONFIRM_OVER = 20  # Free-tier monthly auto-tagged-pages bucket
+DEFAULT_CONFIRM_OVER = 20  # pages; confirm before larger billable runs
 
 
 # --------------------------------------------------------------------------------------------
@@ -84,30 +83,44 @@ def local_page_count(path: Path):
 def quota_gate(pages, confirm_over: int, yes: bool, interactive: bool) -> tuple[bool, str]:
     """Decide whether to proceed given the estimated page count (R16 / KD6).
 
-    Remaining quota is not surfaced pre-call, so the gate is anchored to --confirm-over
-    (default 20, the Free-tier monthly bucket). Returns (proceed, message).
+    Remaining usage is not surfaced pre-call, so the gate is anchored to --confirm-over
+    (default 20 pages). Returns (proceed, message).
 
     Unknown page count (pages is None — a remote --url, or an unreadable local file) does NOT
-    auto-proceed: an unbounded remote PDF could otherwise burn quota with no confirmation. Unknown
-    count requires --yes (or interactive confirmation), same as exceeding the threshold.
+    auto-proceed: an unbounded remote PDF could otherwise run up cost with no confirmation.
+    Unknown count requires --yes (or interactive confirmation), same as exceeding the threshold.
     """
     if yes or (pages is not None and pages <= confirm_over):
         return True, ""
     if pages is None:
         msg = (
-            "Preflight: page count is unknown (remote --url or unreadable file), so auto-tagging "
-            "quota cost can't be bounded. Auto-tagging consumes quota that does not roll over. "
+            "Preflight: page count is unknown (remote --url or unreadable file), so the cost of "
+            "auto-tagging can't be bounded. Auto-tagging is billed per page. "
             "Re-run with --yes to proceed."
         )
     else:
         msg = (
-            f"Preflight: {pages} page(s) exceeds --confirm-over {confirm_over} "
-            f"(the Free-tier monthly auto-tagged-pages bucket). Auto-tagging consumes quota that "
-            "does not roll over. Re-run with --yes to proceed."
+            f"Preflight: {pages} page(s) exceeds --confirm-over {confirm_over}. Auto-tagging is "
+            "billed per page from your monthly usage, then your wallet. "
+            "Re-run with --yes to proceed."
         )
     if interactive:
         return input(f"{msg}\nProceed anyway? [y/N] ").strip().lower() in ("y", "yes"), msg
     return False, msg
+
+
+def has_text_layer(path: Path, max_pages: int = 3):
+    """True if the first pages have extractable text, False if none do (likely an image-only
+    scan that needs OCR first), None if the file can't be read."""
+    try:
+        from pypdf import PdfReader
+
+        for page in PdfReader(str(path)).pages[:max_pages]:
+            if (page.extract_text() or "").strip():
+                return True
+        return False
+    except Exception:
+        return None
 
 
 def redact(text: str, secret: str | None) -> str:
@@ -158,7 +171,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output", help="Output path. Default: <input-stem>-tagged.pdf.")
     p.add_argument("--confirm-over", dest="confirm_over", type=int, default=DEFAULT_CONFIRM_OVER,
                    help="Confirm before runs exceeding this many pages (default 20).")
-    p.add_argument("--yes", action="store_true", help="Bypass the quota confirmation gate.")
+    p.add_argument("--yes", action="store_true", help="Bypass the cost confirmation gate.")
     return p
 
 
@@ -166,8 +179,7 @@ def _require_key() -> str:
     key = os.environ.get("NUTRIENT_ACCESSIBILITY_API_KEY")
     if not key:  # None or empty — an empty key would send "Authorization: Bearer " and 401
         print(
-            "NUTRIENT_ACCESSIBILITY_API_KEY is not set. The DWS Accessibility API is a separate "
-            "product with its own key (not the Processor or Extraction key). Export it before "
+            "NUTRIENT_ACCESSIBILITY_API_KEY is not set. Export your Nutrient API key before "
             "running this script.",
             file=sys.stderr,
         )
@@ -194,6 +206,13 @@ async def main() -> None:
             in_path = Path(args.input)
             validate_input(in_path)
             pages = local_page_count(in_path)
+            if has_text_layer(in_path) is False:
+                print(
+                    "Warning: this PDF has no text layer (likely a scan). Auto-tagging will tag "
+                    "each page as a single figure with no readable text. Run "
+                    "`scripts/prepare.py --input <file> --ocr <language>` first.",
+                    file=sys.stderr,
+                )
         else:
             validate_remote_url(args.url)
             pages = None  # cannot count a remote file locally
