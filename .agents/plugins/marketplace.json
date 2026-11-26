@@ -13,6 +13,22 @@
       "category": "Document Processing"
     },
     {
+      "name": "make-pdf",
+      "source": {
+        "source": "local",
+        "path": "./plugins/make-pdf"
+      },
+      "category": "Document Processing"
+    },
+    {
+      "name": "remediate-pdf",
+      "source": {
+        "source": "local",
+        "path": "./plugins/remediate-pdf"
+      },
+      "category": "Document Processing"
+    },
+    {
       "name": "pdf-to-markdown",
       "source": {
         "source": "local",
